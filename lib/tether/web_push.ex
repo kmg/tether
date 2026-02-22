@@ -22,10 +22,9 @@ defmodule Tether.WebPush do
     encrypted = encrypt_payload(message, subscription)
 
     headers = [
-      {"Authorization", "vapid t=#{jwt}, k=#{vapid_key}"},
-      {"Content-Encoding", "aes128gcm"},
-      {"Content-Type", "application/octet-stream"},
-      {"TTL", "86400"}
+      {~c"Authorization", to_charlist("vapid t=#{jwt}, k=#{vapid_key}")},
+      {~c"Content-Encoding", ~c"aes128gcm"},
+      {~c"TTL", ~c"86400"}
     ]
 
     :httpc.request(
