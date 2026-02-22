@@ -54,9 +54,55 @@ defaults are auto-generated on first run.
 | `SECRET_KEY_BASE` | auto-generated | Phoenix session secret |
 | `TETHER_DATA_DIR` | `~/.local/share/tether` | Persistent data directory |
 
-### TLS (optional)
+### Remote access via Tailscale (optional)
 
-For HTTPS (e.g., via Tailscale):
+Tether works on localhost by default. To access it from your phone over your
+Tailscale network with HTTPS:
+
+1. Install Tailscale if you haven't: `brew install tailscale`
+
+2. Get your machine's Tailscale hostname:
+
+    ```bash
+    tailscale status --json | jq -r '.Self.DNSName' | sed 's/\.$//'
+    ```
+
+3. Generate TLS certs for your hostname:
+
+    ```bash
+    tailscale cert YOUR-MACHINE.tail1234.ts.net
+    ```
+
+    This creates two files in the current directory:
+    `YOUR-MACHINE.tail1234.ts.net.crt` and `YOUR-MACHINE.tail1234.ts.net.key`
+
+4. Move the certs somewhere persistent and configure Tether:
+
+    ```bash
+    mkdir -p ~/.local/share/tether/cert
+    mv YOUR-MACHINE.tail1234.ts.net.* ~/.local/share/tether/cert/
+
+    # Add to your shell profile (~/.zshrc or ~/.bashrc):
+    export TLS_CERTFILE="$HOME/.local/share/tether/cert/YOUR-MACHINE.tail1234.ts.net.crt"
+    export TLS_KEYFILE="$HOME/.local/share/tether/cert/YOUR-MACHINE.tail1234.ts.net.key"
+    export PHX_HOST="YOUR-MACHINE.tail1234.ts.net"
+    ```
+
+5. Restart Tether:
+
+    ```bash
+    brew services restart tether
+    ```
+
+6. Open `https://YOUR-MACHINE.tail1234.ts.net:7374` on your phone
+   (must be on the same Tailscale network).
+
+The auth token is the same — it's printed in the logs at
+`/opt/homebrew/var/log/tether.log`, or check `~/.local/share/tether/.token`.
+
+### TLS without Tailscale
+
+Any TLS certs work. Set `TLS_CERTFILE` and `TLS_KEYFILE` environment variables:
 
 ```bash
 export TLS_CERTFILE=/path/to/cert.pem
