@@ -32,14 +32,12 @@ if config_env() == :prod do
 
   endpoint_config =
     if has_tls? do
-      endpoint_config
-      |> Keyword.put(:https,
+      Keyword.put(endpoint_config, :https,
         port: port,
         cipher_suite: :strong,
         certfile: certfile,
         keyfile: keyfile
       )
-      |> Keyword.put(:force_ssl, rewrite_on: [:x_forwarded_proto])
     else
       Keyword.put(endpoint_config, :http,
         ip: {0, 0, 0, 0},
