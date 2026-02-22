@@ -57,6 +57,6 @@ if vapid_public && vapid_private do
     vapid_details: [
       public_key: vapid_public,
       private_key: vapid_private,
-      subject: System.get_env("VAPID_SUBJECT", "mailto:tether@localhost")
+      subject: System.get_env("VAPID_SUBJECT", "mailto:tether@example.com")
     ]
 end

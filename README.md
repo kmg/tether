@@ -85,7 +85,7 @@ Tether is configured via environment variables. When running as a release
 | `TLS_KEYFILE` | — | Path to TLS private key (enables HTTPS) |
 | `VAPID_PUBLIC_KEY` | — | VAPID public key (enables push notifications) |
 | `VAPID_PRIVATE_KEY` | — | VAPID private key (enables push notifications) |
-| `VAPID_SUBJECT` | `mailto:tether@localhost` | VAPID contact URI |
+| `VAPID_SUBJECT` | `mailto:tether@example.com` | VAPID contact URI (must be a real domain) |
 
 ### Env file
 

@@ -43,7 +43,7 @@ defmodule Tether.WebPush do
     claims = %{
       "aud" => audience,
       "exp" => System.system_time(:second) + 12 * 3600,
-      "sub" => vapid[:subject] || "mailto:tether@localhost"
+      "sub" => vapid[:subject] || "mailto:tether@example.com"
     }
 
     header_b64 = Base.url_encode64(Jason.encode!(header), padding: false)
