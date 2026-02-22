@@ -168,6 +168,12 @@ Set up HTTPS first (see above).
 4. Open Tether in your phone's browser and accept the notification
    prompt. You'll get a push whenever Claude is waiting for input.
 
+5. **Add to Home Screen** — for an app-like experience, save Tether to
+   your home screen. On iOS Safari: tap the share button → "Add to Home
+   Screen". On Android Chrome: tap the menu → "Add to Home screen".
+   This gives you a standalone window (no browser chrome) and ensures
+   notifications work reliably in the background.
+
 ## Development
 
 ```bash
