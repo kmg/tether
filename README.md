@@ -26,7 +26,21 @@ brew install tether
 tether start
 ```
 
-Open the URL printed in your terminal (includes auth token).
+Open the URL printed in your terminal. It includes a one-time auth token —
+paste it into the login screen and you're in. The session lasts 30 days.
+
+## Authentication
+
+Tether generates a random token on first run, stored at
+`~/.local/share/tether/.token`. The token is printed to the terminal
+(or to `/opt/homebrew/var/log/tether.log` when using `brew services`).
+
+Every route requires authentication. On first visit you'll see a token
+input screen — paste the token from the URL or the file. Once
+authenticated, a session cookie keeps you logged in for 30 days.
+
+To use a custom token, set `TETHER_TOKEN` in your env file (see
+[Configuration](#configuration)).
 
 ## Manual install
 
@@ -43,49 +57,69 @@ Open http://localhost:7374 in your browser.
 
 ## Configuration
 
-Tether is configured via environment variables. When running as a release,
-defaults are auto-generated on first run.
+Tether is configured via environment variables. When running as a release
+(via `brew install`), defaults are auto-generated on first run.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `PORT` | `7374` | HTTP port |
+| `PORT` | `7374` | HTTP/HTTPS port |
 | `PHX_HOST` | `localhost` | Hostname for URLs |
 | `TETHER_TOKEN` | auto-generated | Auth token (printed on startup) |
 | `SECRET_KEY_BASE` | auto-generated | Phoenix session secret |
 | `TETHER_DATA_DIR` | `~/.local/share/tether` | Persistent data directory |
+| `TLS_CERTFILE` | — | Path to TLS certificate (enables HTTPS) |
+| `TLS_KEYFILE` | — | Path to TLS private key (enables HTTPS) |
+| `VAPID_PUBLIC_KEY` | — | VAPID public key (enables push notifications) |
+| `VAPID_PRIVATE_KEY` | — | VAPID private key (enables push notifications) |
+| `VAPID_SUBJECT` | `mailto:tether@localhost` | VAPID contact URI |
 
-### Remote access via Tailscale (optional)
+### Env file
 
-Tether works on localhost by default. To access it from your phone over your
-Tailscale network with HTTPS:
+The recommended way to configure a brew-installed Tether is the env file
+at `~/.local/share/tether/env`. It's sourced on every start — no need to
+modify your shell profile.
 
-1. Install Tailscale if you haven't: `brew install tailscale`
+```bash
+# ~/.local/share/tether/env
+TLS_CERTFILE=/Users/you/.local/share/tether/cert/your-host.ts.net.crt
+TLS_KEYFILE=/Users/you/.local/share/tether/cert/your-host.ts.net.key
+PHX_HOST=your-host.ts.net
+VAPID_PUBLIC_KEY=BLa...
+VAPID_PRIVATE_KEY=dGV...
+```
 
-2. Get your machine's Tailscale hostname:
+No `export` needed — the release script handles that.
+
+### HTTPS via Tailscale
+
+Tether runs HTTP on localhost by default. For phone access and push
+notifications, you need HTTPS. Tailscale gives you free TLS certs
+that work across your private network.
+
+1. Install Tailscale: `brew install --cask tailscale`
+
+2. Get your machine's hostname:
 
     ```bash
     tailscale status --json | jq -r '.Self.DNSName' | sed 's/\.$//'
     ```
 
-3. Generate TLS certs for your hostname:
-
-    ```bash
-    tailscale cert YOUR-MACHINE.tail1234.ts.net
-    ```
-
-    This creates two files in the current directory:
-    `YOUR-MACHINE.tail1234.ts.net.crt` and `YOUR-MACHINE.tail1234.ts.net.key`
-
-4. Move the certs somewhere persistent and configure Tether:
+3. Generate certs and move them to Tether's data dir:
 
     ```bash
     mkdir -p ~/.local/share/tether/cert
-    mv YOUR-MACHINE.tail1234.ts.net.* ~/.local/share/tether/cert/
+    cd ~/.local/share/tether/cert
+    tailscale cert YOUR-MACHINE.tail1234.ts.net
+    ```
 
-    # Add to your shell profile (~/.zshrc or ~/.bashrc):
-    export TLS_CERTFILE="$HOME/.local/share/tether/cert/YOUR-MACHINE.tail1234.ts.net.crt"
-    export TLS_KEYFILE="$HOME/.local/share/tether/cert/YOUR-MACHINE.tail1234.ts.net.key"
-    export PHX_HOST="YOUR-MACHINE.tail1234.ts.net"
+4. Create the env file:
+
+    ```bash
+    cat > ~/.local/share/tether/env << 'EOF'
+    TLS_CERTFILE=/Users/you/.local/share/tether/cert/YOUR-MACHINE.tail1234.ts.net.crt
+    TLS_KEYFILE=/Users/you/.local/share/tether/cert/YOUR-MACHINE.tail1234.ts.net.key
+    PHX_HOST=YOUR-MACHINE.tail1234.ts.net
+    EOF
     ```
 
 5. Restart Tether:
@@ -97,33 +131,42 @@ Tailscale network with HTTPS:
 6. Open `https://YOUR-MACHINE.tail1234.ts.net:7374` on your phone
    (must be on the same Tailscale network).
 
-The auth token is the same — it's printed in the logs at
-`/opt/homebrew/var/log/tether.log`, or check `~/.local/share/tether/.token`.
+### HTTPS without Tailscale
 
-### TLS without Tailscale
+Any TLS certs work. Add `TLS_CERTFILE` and `TLS_KEYFILE` to your env file.
+When both are set and the files exist, Tether switches to HTTPS automatically.
 
-Any TLS certs work. Set `TLS_CERTFILE` and `TLS_KEYFILE` environment variables:
+### Push notifications
 
-```bash
-export TLS_CERTFILE=/path/to/cert.pem
-export TLS_KEYFILE=/path/to/key.pem
-```
+Push notifications require **HTTPS** (or localhost). Browsers only allow
+Service Workers — which power push notifications — on secure contexts.
+If you're accessing Tether over `http://192.168.x.x`, push won't work.
+Set up HTTPS first (see above).
 
-### Push notifications (optional)
+1. Generate VAPID keys:
 
-Generate VAPID keys in iex:
+    ```bash
+    tether remote
+    iex> Tether.Notifier.generate_vapid_keys()
+    ```
 
-```elixir
-Tether.Notifier.generate_vapid_keys()
-```
+    This prints a public/private key pair.
 
-Then set:
+2. Add the keys to your env file (`~/.local/share/tether/env`):
 
-```bash
-export VAPID_PUBLIC_KEY=...
-export VAPID_PRIVATE_KEY=...
-export VAPID_SUBJECT=mailto:you@example.com
-```
+    ```
+    VAPID_PUBLIC_KEY=BLa...
+    VAPID_PRIVATE_KEY=dGV...
+    ```
+
+3. Restart Tether:
+
+    ```bash
+    brew services restart tether
+    ```
+
+4. Open Tether in your phone's browser and accept the notification
+   prompt. You'll get a push whenever Claude is waiting for input.
 
 ## Development
 
