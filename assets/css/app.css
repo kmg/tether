@@ -148,8 +148,8 @@ html, body {
   font-display: block;
 }
 
-/* xterm.js styles */
-@import "@xterm/xterm/css/xterm.css";
+/* xterm.js styles (vendored from @xterm/xterm) */
+@import "../vendor/xterm.css";
 
 /* Terminal container styles */
 #terminal-container {

@@ -15,15 +15,8 @@ env:
 
 jobs:
   build:
-    name: Build ${{ matrix.arch }}
-    runs-on: ${{ matrix.runner }}
-    strategy:
-      matrix:
-        include:
-          - runner: macos-14
-            arch: aarch64-apple-darwin
-          - runner: macos-13
-            arch: x86_64-apple-darwin
+    name: Build macOS (Apple Silicon)
+    runs-on: macos-14
 
     steps:
       - uses: actions/checkout@v4
@@ -39,12 +32,15 @@ jobs:
           path: |
             deps
             _build
-          key: ${{ runner.os }}-${{ matrix.arch }}-mix-${{ hashFiles('mix.lock') }}
+            assets/node_modules
+          key: ${{ runner.os }}-arm64-mix-${{ hashFiles('mix.lock', 'assets/package.json') }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.arch }}-mix-
+            ${{ runner.os }}-arm64-mix-
 
       - name: Install dependencies
-        run: mix deps.get --only prod
+        run: |
+          mix deps.get --only prod
+          cd assets && npm install
 
       - name: Compile
         run: mix compile
@@ -58,9 +54,8 @@ jobs:
       - name: Rename tarball
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          mv _build/prod/tether-${VERSION}.tar.gz tether-${VERSION}-${{ matrix.arch }}.tar.gz
-          echo "TARBALL=tether-${VERSION}-${{ matrix.arch }}.tar.gz" >> $GITHUB_ENV
-          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          mv _build/prod/tether-${VERSION}.tar.gz tether-${VERSION}-aarch64-apple-darwin.tar.gz
+          echo "TARBALL=tether-${VERSION}-aarch64-apple-darwin.tar.gz" >> $GITHUB_ENV
 
       - name: Upload to release
         uses: softprops/action-gh-release@v2
