@@ -1,0 +1,5 @@
+## Customize flags given to the VM: https://www.erlang.org/doc/man/erl.html
+## -name/-sname/-setcookie are configured automatically by the release script
+
+## Enable Unicode filename support
++pc unicode
