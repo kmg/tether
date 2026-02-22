@@ -79,9 +79,9 @@ defmodule Tether.Notifier do
       })
 
     try do
-      case WebPushEncryption.send_web_push(payload, subscription) do
+      case Tether.WebPush.send(payload, subscription) do
         {:ok, %{status_code: code}} when code in 200..299 ->
-          Logger.debug("Push sent to #{subscription.endpoint}")
+          Logger.info("Push sent to #{subscription.endpoint}")
           :ok
 
         {:ok, %{status_code: 404}} ->
@@ -104,9 +104,7 @@ defmodule Tether.Notifier do
       end
     rescue
       e ->
-        Logger.warning("Push error for #{subscription.endpoint}: #{inspect(e)}")
-        # Remove invalid subscription
-        unsubscribe(subscription.endpoint)
+        Logger.warning("Push error for #{subscription.endpoint}: #{Exception.message(e)}")
         :error
     end
   end

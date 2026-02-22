@@ -4,7 +4,7 @@ defmodule Tether.MixProject do
   def project do
     [
       app: :tether,
-      version: "0.1.4",
+      version: "0.1.5",
       elixir: "~> 1.15",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
@@ -22,7 +22,7 @@ defmodule Tether.MixProject do
   def application do
     [
       mod: {Tether.Application, []},
-      extra_applications: [:logger, :runtime_tools]
+      extra_applications: [:logger, :runtime_tools, :inets, :ssl]
     ]
   end
 
