@@ -49,3 +49,6 @@ priv/cert/
 /priv/static/*-*.svg
 /priv/static/*-*.woff2
 /priv/static/*.gz
+
+# Service worker must be tracked (not a build artifact)
+!/priv/static/service-worker.js
