@@ -20,6 +20,20 @@ No SSH client app. No keyboard shortcuts. Just a browser.
 
 ## Quick start
 
+### 1. Start Claude Code in tmux
+
+Tether monitors tmux sessions, so Claude Code needs to be running inside one:
+
+```bash
+tmux new-session -s work
+claude
+```
+
+If you already use tmux, you're set — Tether detects Claude in any window
+of any session.
+
+### 2. Install and start Tether
+
 ```bash
 brew tap kmg/tether
 brew install tether
