@@ -31,11 +31,10 @@ jobs:
         with:
           path: |
             deps
-            _build
             assets/node_modules
-          key: ${{ runner.os }}-arm64-mix-${{ hashFiles('mix.lock', 'assets/package.json') }}
+          key: ${{ runner.os }}-arm64-deps-${{ hashFiles('mix.lock', 'assets/package.json') }}
           restore-keys: |
-            ${{ runner.os }}-arm64-mix-
+            ${{ runner.os }}-arm64-deps-
 
       - name: Install dependencies
         run: |
@@ -49,7 +48,7 @@ jobs:
         run: mix assets.deploy
 
       - name: Build release
-        run: mix release
+        run: mix release --overwrite
 
       - name: Rename tarball
         run: |
