@@ -9,6 +9,28 @@ Tether connects to your tmux sessions and gives you:
 - **Mobile terminal** — tap to attach, type a response, done. No keyboard shortcuts needed.
 - **Works from any browser** — phone, tablet, another laptop
 
+## Screenshots
+
+### Session browser
+<p align="center">
+  <img src="screenshots/home.jpeg" width="270" alt="Home — tmux sessions with Claude activity indicators" />
+  <img src="screenshots/needs-input.jpeg" width="270" alt="Window highlighted when Claude needs input" />
+</p>
+
+### Mobile terminal
+<p align="center">
+  <img src="screenshots/terminal.jpeg" width="270" alt="Terminal showing Claude Code output" />
+  <img src="screenshots/terminal-keyboard.jpeg" width="270" alt="Terminal with mobile keyboard and toolbar" />
+  <img src="screenshots/attach-file-picker.jpeg" width="270" alt="Attach files from phone camera or library" />
+</p>
+
+### Push notifications
+<p align="center">
+  <img src="screenshots/notification-prompt.jpeg" width="270" alt="iOS notification permission prompt" />
+  <img src="screenshots/notification-enabled.jpeg" width="270" alt="Notifications enabled confirmation" />
+  <img src="screenshots/push-notifications.jpeg" width="270" alt="Push notifications in iOS Notification Center" />
+</p>
+
 ## How it works
 
 You run Claude Code in tmux. Tether watches your tmux sessions,
