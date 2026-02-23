@@ -4,6 +4,10 @@ import { setupPushNotifications } from "../push"
 const PushNotificationsHook = {
   mounted() {
     this.updateButtonState()
+  },
+
+  reconnected() {
+    this.updateButtonState()
 
     this.el.addEventListener("click", async () => {
       this.el.textContent = "Setting up..."
