@@ -116,6 +116,8 @@ async function networkFirst(request) {
 self.addEventListener("push", (event) => {
   const data = event.data ? event.data.json() : {}
 
+  const tag = (data.data && data.data.tag) || undefined
+
   const options = {
     body: data.body || "Claude needs your input",
     icon: data.icon || "/images/icon-192.png",
@@ -127,6 +129,7 @@ self.addEventListener("push", (event) => {
       { action: "dismiss", title: "Dismiss" },
     ],
     requireInteraction: true,
+    ...(tag && { tag, renotify: true }),
   }
 
   event.waitUntil(

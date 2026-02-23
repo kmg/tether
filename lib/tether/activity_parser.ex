@@ -36,7 +36,8 @@ defmodule Tether.ActivityParser do
     - `{:waiting, prompt_text}` — waiting for permission/input
     - `{:tool, tool_name, detail}` — actively using a tool
     - `{:working, user_prompt}` — Claude is working on user's request
-    - `{:idle, nil}` — at user prompt, ready for input
+    - `{:idle, nil}` — at user prompt, ready for input (no history)
+    - `{:idle, prompt}` — at user prompt, last prompt preserved for context
     - `nil` — couldn't determine activity
   """
   def parse(nil), do: nil
@@ -65,6 +66,7 @@ defmodule Tether.ActivityParser do
   def to_display_string({:tool, name, detail}), do: format_tool(name, detail)
   def to_display_string({:working, prompt}), do: truncate(prompt, 60)
   def to_display_string({:idle, nil}), do: nil
+  def to_display_string({:idle, prompt}) when is_binary(prompt), do: prompt
 
   # --- Find user's last prompt ---
 
@@ -108,9 +110,9 @@ defmodule Tether.ActivityParser do
       Regex.match?(@thought_done_re, trimmed) ->
         working_on(prompt)
 
-      # Empty prompt (❯) — look above to see if Claude is actively working
+      # Empty prompt (❯) — Claude finished, idle with last prompt as context
       Regex.match?(@prompt_empty_re, trimmed) ->
-        check_above_prompt(rest, prompt)
+        {:idle, prompt}
 
       # Prompt with text — this is the input area; look above for state
       Regex.match?(@prompt_with_text_re, trimmed) ->
@@ -149,26 +151,28 @@ defmodule Tether.ActivityParser do
   defp working_on(nil), do: nil
   defp working_on(prompt), do: {:working, prompt}
 
-  # When we hit a ❯ prompt, look above to see if Claude is actively working
+  # When we hit a ❯ prompt with text, look above to see if Claude is actively working
   defp check_above_prompt(lines, prompt) do
-    lines
-    |> Enum.reject(fn l ->
-      t = String.trim(l)
-      t == "" or Regex.match?(@separator_re, t)
-    end)
-    |> case do
-      [] ->
-        {:idle, nil}
+    non_empty =
+      lines
+      |> Enum.reject(fn l ->
+        t = String.trim(l)
+        t == "" or Regex.match?(@separator_re, t)
+      end)
 
-      [first | _] ->
-        trimmed = String.trim(first)
+    has_active_marker =
+      Enum.any?(non_empty, fn l ->
+        trimmed = String.trim(l)
 
-        cond do
-          Regex.match?(@thinking_re, trimmed) -> working_on(prompt)
-          Regex.match?(@thought_done_re, trimmed) -> working_on(prompt)
-          String.starts_with?(trimmed, "⏺") -> working_on(prompt)
-          true -> {:idle, nil}
-        end
+        Regex.match?(@thinking_re, trimmed) or
+          Regex.match?(@thought_done_re, trimmed) or
+          String.starts_with?(trimmed, "⏺")
+      end)
+
+    if has_active_marker do
+      working_on(prompt)
+    else
+      {:idle, prompt}
     end
   end
 

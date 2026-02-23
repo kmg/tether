@@ -63,8 +63,8 @@ defmodule Tether.Notifier do
   def notify_claude_waiting(session, window_index, window_name) do
     notify(
       "Claude needs input",
-      "#{session} → #{window_name}",
-      %{session: session, window: window_index}
+      "#{session}:#{window_index} → #{window_name}",
+      %{session: session, window: window_index, tag: "claude-#{session}-#{window_index}"}
     )
   end
 
