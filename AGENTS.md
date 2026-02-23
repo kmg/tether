@@ -19,6 +19,7 @@ Do NOT run `mix phx.server` directly as it will skip loading the `.env` file and
    ```
 5. Update `homebrew-tether/Formula/tether.rb` — version + sha256, commit, push
 6. Update lifeos submodule pointers for both `create/tether` and `create/homebrew-tether`, commit, push
+7. Upgrade locally: `brew update && brew upgrade tether && brew services restart tether`
 
 ## Dev mode testing
 
