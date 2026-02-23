@@ -6,6 +6,20 @@ Use `./start.sh` to start the server - this loads environment variables from `.e
 
 Do NOT run `mix phx.server` directly as it will skip loading the `.env` file and push notifications will fail.
 
+## Release checklist
+
+1. Bump `version` in `mix.exs`, commit, push
+2. Tag and push: `git tag v0.1.x && git push origin v0.1.x`
+   - CI (`.github/workflows/release.yml`) builds macOS ARM64 tarball and creates the GitHub release
+3. Wait for CI to complete: `gh run list --limit 1 --workflow release.yml`
+4. Download tarball and get SHA256:
+   ```bash
+   gh release download v0.1.x --pattern '*.tar.gz' --dir /tmp/tether-release
+   shasum -a 256 /tmp/tether-release/tether-0.1.x-aarch64-apple-darwin.tar.gz
+   ```
+5. Update `homebrew-tether/Formula/tether.rb` — version + sha256, commit, push
+6. Update lifeos submodule pointers for both `create/tether` and `create/homebrew-tether`, commit, push
+
 ## Dev mode testing
 
 To test changes without disrupting the production Tailscale-served instance:
