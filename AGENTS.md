@@ -6,6 +6,26 @@ Use `./start.sh` to start the server - this loads environment variables from `.e
 
 Do NOT run `mix phx.server` directly as it will skip loading the `.env` file and push notifications will fail.
 
+## Dev mode testing
+
+To test changes without disrupting the production Tailscale-served instance:
+
+```bash
+MIX_ENV=dev PORT=17374 elixir --erl "-elixir ansi_enabled true" -S mix phx.server
+```
+
+Then verify with curl:
+```bash
+curl -s -o /dev/null -w '%{http_code}' http://localhost:17374        # Home page 200
+curl -s http://localhost:17374 | grep -o 'v[0-9]\.[0-9]\.[0-9]'     # Version shows
+curl -s http://localhost:17374/assets/js/app.js | grep 'functionName' # Built JS has changes
+curl -s -o /dev/null -w '%{http_code}' http://localhost:17374/terminal/lifeos/0  # Terminal page 200
+```
+
+Kill when done: `lsof -ti:17374 | xargs kill`
+
+For Playwright MCP browser testing: Chrome must be fully closed first (Playwright can't launch if Chrome is already running — it tries to reuse the session and exits). Kill Chrome, then use `browser_navigate` to `http://localhost:17374`. Use `browser_evaluate` to test JS logic (encoding, paste events) and `browser_snapshot` to verify DOM state.
+
 ## Debugging
 
 ### Claude process killed unexpectedly

@@ -37,7 +37,13 @@ defmodule TetherWeb.HomeLive do
       {:ok, sessions} ->
         waiting = ClaudeMonitor.waiting_windows()
         activities = ClaudeMonitor.activities()
-        assign(socket, sessions: sessions, waiting: waiting, activities: activities, loading: false)
+
+        assign(socket,
+          sessions: sessions,
+          waiting: waiting,
+          activities: activities,
+          loading: false
+        )
 
       {:error, _} ->
         assign(socket, sessions: [], loading: false)
@@ -61,7 +67,10 @@ defmodule TetherWeb.HomeLive do
     <div class="min-h-screen bg-gray-900 text-gray-100">
       <header class="bg-gray-800 border-b border-gray-700 px-4 py-3 flex items-center justify-between">
         <div>
-          <h1 class="text-xl font-semibold">Tether</h1>
+          <div class="flex items-baseline gap-2">
+            <h1 class="text-xl font-semibold">Tether</h1>
+            <span class="text-xs text-gray-600">v{Application.spec(:tether, :vsn)}</span>
+          </div>
           <p class="text-sm text-gray-400">tmux sessions</p>
         </div>
         <button

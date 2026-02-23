@@ -2,6 +2,17 @@ import { Terminal } from "@xterm/xterm"
 import { FitAddon } from "@xterm/addon-fit"
 import { WebLinksAddon } from "@xterm/addon-web-links"
 
+// Unicode-safe base64 encoding: string → UTF-8 bytes → base64
+// btoa() only handles Latin1, so we encode to UTF-8 first
+function utf8ToBase64(str) {
+  const bytes = new TextEncoder().encode(str)
+  let binary = ''
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte)
+  }
+  return btoa(binary)
+}
+
 const TerminalHook = {
   selectMode: false,
   lastSelection: null,
@@ -118,7 +129,7 @@ const TerminalHook = {
           // Don't echo - Claude Code handles its own input display
           // this.terminal.write(filtered)
         }
-        this.pushEvent("terminal_input", { data: btoa(filtered) })
+        this.pushEvent("terminal_input", { data: utf8ToBase64(filtered) })
       }
     })
 
@@ -199,11 +210,14 @@ const TerminalHook = {
     document.addEventListener("terminal:copy", this.handleCopy)
 
     // Handle paste - iOS long-press menu doesn't trigger xterm's onData
+    // Use terminal.paste() which respects bracketed paste mode (wraps text in
+    // ESC[200~ / ESC[201~ when enabled), so multi-line pastes don't execute
+    // line-by-line. The pasted text flows through onData → terminal_input.
     this.el.addEventListener("paste", (e) => {
       e.preventDefault()
       const text = e.clipboardData?.getData("text")
       if (text) {
-        this.pushEvent("terminal_input", { data: btoa(text) })
+        this.terminal.paste(text)
       }
     })
 
@@ -219,7 +233,7 @@ const TerminalHook = {
       try {
         const text = await navigator.clipboard.readText()
         if (text) {
-          this.pushEvent("terminal_input", { data: btoa(text) })
+          this.terminal.paste(text)
         }
       } catch (e) {
         // Clipboard API blocked on iOS - use native long-press paste instead
@@ -391,7 +405,7 @@ const TerminalHook = {
     this.terminal.onData((data) => {
       const filtered = data.replace(sgrMouseRegex, '')
       if (filtered) {
-        this.pushEvent("terminal_input", { data: btoa(filtered) })
+        this.pushEvent("terminal_input", { data: utf8ToBase64(filtered) })
       }
     })
 

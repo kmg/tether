@@ -10,7 +10,16 @@ defmodule Tether.WindowSession do
   # Higher value = fewer packets but more latency
   @flush_interval 100
 
-  defstruct [:target, :port, :exec_pid, subscribers: [], buffer: "", flush_ref: nil, cols: 80, rows: 24]
+  defstruct [
+    :target,
+    :port,
+    :exec_pid,
+    subscribers: [],
+    buffer: "",
+    flush_ref: nil,
+    cols: 80,
+    rows: 24
+  ]
 
   @doc """
   Start a session attached to a tmux window.

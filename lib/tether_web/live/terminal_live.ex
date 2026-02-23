@@ -50,7 +50,9 @@ defmodule TetherWeb.TerminalLive do
         Process.monitor(pid)
         # Don't subscribe yet - wait for terminal_ready
         ClaudeMonitor.register_active(target)
-        {:noreply, assign(socket, connected: true, session_pid: pid, loading_stage: :terminal_init)}
+
+        {:noreply,
+         assign(socket, connected: true, session_pid: pid, loading_stage: :terminal_init)}
 
       {:error, reason} ->
         {:noreply,
@@ -208,14 +210,17 @@ defmodule TetherWeb.TerminalLive do
   def handle_event("paste_file", %{"data" => data, "type" => type} = params, socket) do
     if socket.assigns.session_pid do
       # Try filename extension first, then MIME type, then fallback to bin
-      ext = case params["name"] do
-        nil -> Map.get(@mime_extensions, type, "bin")
-        name ->
-          case Path.extname(name) do
-            "." <> ext -> ext
-            _ -> Map.get(@mime_extensions, type, "bin")
-          end
-      end
+      ext =
+        case params["name"] do
+          nil ->
+            Map.get(@mime_extensions, type, "bin")
+
+          name ->
+            case Path.extname(name) do
+              "." <> ext -> ext
+              _ -> Map.get(@mime_extensions, type, "bin")
+            end
+        end
 
       # Save to temp file
       filename = "paste-#{System.system_time(:millisecond)}.#{ext}"
@@ -314,10 +319,16 @@ defmodule TetherWeb.TerminalLive do
         phx-update="ignore"
       >
         <%!-- Loading overlay - hidden by JS when terminal renders --%>
-        <div id="loading-overlay" class="absolute inset-0 bg-black flex flex-col items-center justify-center z-10">
+        <div
+          id="loading-overlay"
+          class="absolute inset-0 bg-black flex flex-col items-center justify-center z-10"
+        >
           <div class="font-mono text-sm space-y-1">
             <.loading_milestone done={@loading_stage not in [:connecting]} label="Server" />
-            <.loading_milestone done={@loading_stage not in [:connecting, :pty_starting]} label="Session" />
+            <.loading_milestone
+              done={@loading_stage not in [:connecting, :pty_starting]}
+              label="Session"
+            />
             <.loading_milestone done={@loading_stage in [:streaming, :ready]} label="Display" />
             <%= if @loading_stage in [:streaming, :ready] do %>
               <div class="text-gray-500 pt-2">

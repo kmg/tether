@@ -45,7 +45,8 @@ defmodule TetherWeb.AuthLive do
     if Auth.valid_token?(String.trim(token)) do
       {:noreply, redirect(socket, to: "/auth/callback?token=#{String.trim(token)}")}
     else
-      {:noreply, assign(socket, error: "Invalid token. Check your terminal for the correct token.")}
+      {:noreply,
+       assign(socket, error: "Invalid token. Check your terminal for the correct token.")}
     end
   end
 

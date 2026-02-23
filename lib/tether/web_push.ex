@@ -40,6 +40,7 @@ defmodule Tether.WebPush do
 
   defp build_vapid_jwt(audience, vapid) do
     header = %{"alg" => "ES256", "typ" => "JWT"}
+
     claims = %{
       "aud" => audience,
       "exp" => System.system_time(:second) + 12 * 3600,
@@ -63,12 +64,16 @@ defmodule Tether.WebPush do
     der_to_raw(der_sig)
   end
 
-  defp der_to_raw(<<0x30, _len, 0x02, r_len, r::binary-size(r_len), 0x02, s_len, s::binary>>) when byte_size(s) == s_len do
+  defp der_to_raw(<<0x30, _len, 0x02, r_len, r::binary-size(r_len), 0x02, s_len, s::binary>>)
+       when byte_size(s) == s_len do
     pad_to_32(r) <> pad_to_32(s)
   end
 
   defp pad_to_32(bin) when byte_size(bin) > 32, do: binary_part(bin, byte_size(bin) - 32, 32)
-  defp pad_to_32(bin) when byte_size(bin) < 32, do: :binary.copy(<<0>>, 32 - byte_size(bin)) <> bin
+
+  defp pad_to_32(bin) when byte_size(bin) < 32,
+    do: :binary.copy(<<0>>, 32 - byte_size(bin)) <> bin
+
   defp pad_to_32(bin), do: bin
 
   # --- aes128gcm Encryption (RFC 8291 + RFC 8188) ---
@@ -103,9 +108,16 @@ defmodule Tether.WebPush do
     padded = plaintext <> <<2>>
 
     # Encrypt with AES-128-GCM
-    {ciphertext, tag} = :crypto.crypto_one_time_aead(
-      :aes_128_gcm, cek, nonce, padded, <<>>, 16, true
-    )
+    {ciphertext, tag} =
+      :crypto.crypto_one_time_aead(
+        :aes_128_gcm,
+        cek,
+        nonce,
+        padded,
+        <<>>,
+        16,
+        true
+      )
 
     # Build aes128gcm payload: header || ciphertext || tag
     # Header: salt(16) || rs(4, big-endian uint32) || idlen(1) || keyid(65)

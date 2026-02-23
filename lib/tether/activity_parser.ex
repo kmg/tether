@@ -209,7 +209,9 @@ defmodule Tether.ActivityParser do
     reversed = Enum.reverse(lines)
 
     case Enum.find_index(reversed, &Regex.match?(@status_bar_re, &1)) do
-      nil -> {nil, lines}
+      nil ->
+        {nil, lines}
+
       idx ->
         status_line = Enum.at(reversed, idx)
         body = reversed |> Enum.drop(idx + 1) |> Enum.reverse()
@@ -229,7 +231,9 @@ defmodule Tether.ActivityParser do
         case Regex.run(~r/⏺\s+(\w+):\s*(.*)/, line) do
           [_, name, desc] when name in @tool_names ->
             %{name: name, detail: truncate(desc, 60)}
-          _ -> nil
+
+          _ ->
+            nil
         end
     end
   end
