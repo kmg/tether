@@ -49,6 +49,12 @@ If Claude gets killed ("zsh: killed claude") while using Tether mobile:
 **Shelved features:**
 - **TTS/Voice output** - Attempted but tmux re-renders entire pane content on updates, making it impossible to track "new" output for TTS. Would need a different architecture (structured messages, not terminal scraping). Consider Claude SDK for a proper agent UI instead.
 
+## Tether-specific LiveView patterns
+
+- **Unhandled `handle_info` crashes:** Any unhandled message in a LiveView `handle_info` causes `FunctionClauseError` → process crash → client reconnect (visible as topbar flash). Always add a catch-all `handle_info` clause.
+- **Process dictionary for non-render data:** Use the process dictionary to store data that shouldn't trigger re-renders (e.g., ping history, timing state). Assigns cause re-render checks; process dictionary doesn't.
+- **`push_event` over DOM patches on mobile:** Use `push_event` for display updates to avoid DOM patches that steal focus on mobile Safari (e.g., keyboard dismissal during typing).
+
 ## Project guidelines
 
 - Use `mix precommit` alias when you are done with all changes and fix any pending issues
@@ -331,6 +337,7 @@ custom classes must fully style the input
 
 - Remember anytime you use `phx-hook="MyHook"` and that JS hook manages its own DOM, you **must** also set the `phx-update="ignore"` attribute
 - **Always** provide an unique DOM id alongside `phx-hook` otherwise a compiler error will be raised
+- `mounted()` does NOT re-fire on LiveView reconnect. On reconnect the server re-renders HTML, overwriting JS-managed DOM state. Use `reconnected()` hook callback + `phx-update="ignore"` to preserve client-side state through reconnections. See `push_notifications.js` for the pattern (v0.1.7 fix).
 
 LiveView hooks come in two flavors, 1) colocated js hooks for "inline" scripts defined inside HEEx,
 and 2) external `phx-hook` annotations where JavaScript object literals are defined and passed to the `LiveSocket` constructor.
