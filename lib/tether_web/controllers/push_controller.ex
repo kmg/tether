@@ -13,6 +13,11 @@ defmodule TetherWeb.PushController do
     json(conn, %{status: "unsubscribed"})
   end
 
+  def confirm(conn, %{"endpoint" => endpoint}) do
+    Notifier.keep_only(endpoint)
+    json(conn, %{status: "confirmed"})
+  end
+
   def vapid_key(conn, _params) do
     case Notifier.vapid_public_key() do
       nil ->

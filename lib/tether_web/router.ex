@@ -39,6 +39,7 @@ defmodule TetherWeb.Router do
     pipe_through :api
 
     post "/push/subscribe", PushController, :subscribe
+    post "/push/confirm", PushController, :confirm
     delete "/push/subscribe", PushController, :unsubscribe
     get "/push/vapid-key", PushController, :vapid_key
     post "/push/test", PushController, :test

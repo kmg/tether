@@ -40,6 +40,24 @@ defmodule Tether.Notifier do
   end
 
   @doc """
+  Keep only the given endpoint, remove all others.
+  Used by clients to prune stale subscriptions on connect.
+  """
+  def keep_only(endpoint) do
+    stale =
+      :ets.tab2list(@table)
+      |> Enum.filter(fn {ep, _} -> ep != endpoint end)
+
+    if stale != [] do
+      for {ep, _} <- stale, do: :ets.delete(@table, ep)
+      save_to_file()
+      Logger.info("Pruned #{length(stale)} stale subscription(s), kept #{endpoint}")
+    end
+
+    :ok
+  end
+
+  @doc """
   Send notification to all subscribers.
   """
   def notify(title, body, data \\ %{}) do

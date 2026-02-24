@@ -53,6 +53,12 @@ const PushNotificationsHook = {
         this.el.textContent = "Notifications Enabled ✓"
         this.el.classList.remove("bg-blue-600", "hover:bg-blue-500")
         this.el.classList.add("bg-green-600")
+        // Tell server this is the active endpoint, prune stale ones
+        fetch("/api/push/confirm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ endpoint: subscription.endpoint }),
+        }).catch(() => {})
       } else {
         // Permission granted but subscription lost (iOS purges these)
         // Auto-resubscribe silently
