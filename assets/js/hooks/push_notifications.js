@@ -3,11 +3,17 @@ import { setupPushNotifications } from "../push"
 
 const PushNotificationsHook = {
   mounted() {
+    this.setupClickHandler()
     this.updateButtonState()
   },
 
   reconnected() {
     this.updateButtonState()
+  },
+
+  setupClickHandler() {
+    if (this._clickBound) return
+    this._clickBound = true
 
     this.el.addEventListener("click", async () => {
       this.el.textContent = "Setting up..."
@@ -32,7 +38,6 @@ const PushNotificationsHook = {
   },
 
   async updateButtonState() {
-    // Check current permission state
     if (!("Notification" in window)) {
       this.el.textContent = "Not Supported"
       this.el.disabled = true
@@ -42,13 +47,25 @@ const PushNotificationsHook = {
     }
 
     if (Notification.permission === "granted") {
-      // Check if we have an active subscription
       const reg = await navigator.serviceWorker.ready
       const subscription = await reg.pushManager.getSubscription()
       if (subscription) {
         this.el.textContent = "Notifications Enabled ✓"
         this.el.classList.remove("bg-blue-600", "hover:bg-blue-500")
         this.el.classList.add("bg-green-600")
+      } else {
+        // Permission granted but subscription lost (iOS purges these)
+        // Auto-resubscribe silently
+        try {
+          const success = await setupPushNotifications()
+          if (success) {
+            this.el.textContent = "Notifications Enabled ✓"
+            this.el.classList.remove("bg-blue-600", "hover:bg-blue-500")
+            this.el.classList.add("bg-green-600")
+          }
+        } catch (e) {
+          console.warn("Auto-resubscribe failed:", e)
+        }
       }
     } else if (Notification.permission === "denied") {
       this.el.textContent = "Blocked"

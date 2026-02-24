@@ -372,7 +372,7 @@ custom classes must fully style the input
 
 - Remember anytime you use `phx-hook="MyHook"` and that JS hook manages its own DOM, you **must** also set the `phx-update="ignore"` attribute
 - **Always** provide an unique DOM id alongside `phx-hook` otherwise a compiler error will be raised
-- `mounted()` does NOT re-fire on LiveView reconnect. On reconnect the server re-renders HTML, overwriting JS-managed DOM state. Use `reconnected()` hook callback + `phx-update="ignore"` to preserve client-side state through reconnections. See `push_notifications.js` for the pattern (v0.1.7 fix).
+- `mounted()` does NOT re-fire on LiveView reconnect. On reconnect the server re-renders HTML, overwriting JS-managed DOM state. Use `reconnected()` hook callback + `phx-update="ignore"` to preserve client-side state through reconnections. Event listeners should be registered in `mounted()` (with a guard to prevent duplicates), and `reconnected()` should only refresh state. See `push_notifications.js` for the pattern.
 
 LiveView hooks come in two flavors, 1) colocated js hooks for "inline" scripts defined inside HEEx,
 and 2) external `phx-hook` annotations where JavaScript object literals are defined and passed to the `LiveSocket` constructor.
