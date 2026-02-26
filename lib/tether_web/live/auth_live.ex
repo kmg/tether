@@ -64,12 +64,12 @@ defmodule TetherWeb.AuthLive do
         <.form for={@form} id="auth-form" phx-change="validate" phx-submit="authenticate">
           <div style="margin-bottom: 1rem;">
             <input
-              type="text"
+              type="password"
               name="auth[token]"
               id="auth-token"
               value={@form[:token].value}
               placeholder="Paste token here"
-              autocomplete="off"
+              autocomplete="current-password"
               autofocus
               style="width: 100%; padding: 0.75rem; background: #1f2937; border: 1px solid #374151; border-radius: 0.5rem; color: #e5e7eb; font-family: ui-monospace, monospace; font-size: 0.875rem; outline: none;"
             />
