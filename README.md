@@ -2,12 +2,19 @@
 
 Monitor and respond to Claude Code from your phone.
 
-Tether connects to your tmux sessions and gives you:
+~4,900 lines of Elixir/LiveView. Self-hosted PWA over Tailscale.
 
-- **Push notifications** — your phone buzzes when Claude needs input
-- **Activity detection** — see which windows have Claude waiting vs working at a glance
-- **Mobile terminal** — tap to attach, type a response, done. No keyboard shortcuts needed.
-- **Works from any browser** — phone, tablet, another laptop
+Tether watches your tmux sessions and tells you when Claude needs input:
+
+- **Push notifications** — your phone buzzes when Claude transitions from working to waiting
+- **Activity detection** — see what Claude is doing at a glance (which tool, which file, waiting vs working)
+- **Mobile terminal** — full terminal in the browser with a mobile-friendly toolbar
+- **File attachments** — send images and files from your phone camera or library to the terminal
+- **Self-hosted** — runs on your own machine over Tailscale, no external dependencies
+
+### When to use Tether
+
+Claude Code's [Remote Control](https://code.claude.com/docs/en/remote-control) gives you mobile access to sessions. Tether is an alternative for long-running tasks where you want to walk away and get notified when Claude needs input. It adds a monitoring layer on top of tmux — pattern-matching terminal output to detect state transitions — plus push notifications and file attachments from your phone.
 
 ## Screenshots
 
