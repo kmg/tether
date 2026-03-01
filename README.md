@@ -193,10 +193,19 @@ Set up HTTPS first (see above).
     brew services restart tether
     ```
 
-2. Open Tether in your phone's browser and tap **Enable Notifications**
-   in the top-right. Accept the browser notification prompt.
+2. Open Tether on your phone. You'll see a **bell icon** in the top-right
+   header showing **Off**. Tap it and accept the browser notification prompt.
+   The bell will switch to **On**.
 
-5. **Add to Home Screen** — for an app-like experience, save Tether to
+   The bell icon has five states:
+   - **Off** — ready to enable (tap to subscribe)
+   - **On** — active (tap to unsubscribe)
+   - **Blocked** — you denied the browser permission prompt. Reset in your
+     browser's notification settings.
+   - **Not supported** — your browser doesn't support push notifications.
+   - **...** — subscription in progress.
+
+3. **Add to Home Screen** — for an app-like experience, save Tether to
    your home screen. On iOS Safari: tap the share button → "Add to Home
    Screen". On Android Chrome: tap the menu → "Add to Home screen".
    This gives you a standalone window (no browser chrome) and ensures

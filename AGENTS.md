@@ -8,18 +8,36 @@ Do NOT run `mix phx.server` directly as it will skip loading the `.env` file and
 
 ## Release checklist
 
+**Before releasing:** Test on phone via HTTPS dev server. Get explicit user approval. Don't batch rapid releases — each one should be solid.
+
 1. Bump `version` in `mix.exs`, commit, push
 2. Tag and push: `git tag v0.1.x && git push origin v0.1.x`
    - CI (`.github/workflows/release.yml`) builds macOS ARM64 tarball and creates the GitHub release
-3. Wait for CI to complete: `gh run list --limit 1 --workflow release.yml`
+3. Wait for CI to complete — check via public URL:
+   ```
+   https://github.com/kmg/tether/actions/workflows/release.yml
+   ```
 4. Download tarball and get SHA256:
    ```bash
-   gh release download v0.1.x --pattern '*.tar.gz' --dir /tmp/tether-release
+   curl -sL -o /tmp/tether-release/tether-0.1.x-aarch64-apple-darwin.tar.gz \
+     "https://github.com/kmg/tether/releases/download/v0.1.x/tether-0.1.x-aarch64-apple-darwin.tar.gz"
    shasum -a 256 /tmp/tether-release/tether-0.1.x-aarch64-apple-darwin.tar.gz
    ```
 5. Update `homebrew-tether/Formula/tether.rb` — version + sha256, commit, push
 6. Update lifeos submodule pointers for both `create/tether` and `create/homebrew-tether`, commit, push
 7. Upgrade locally: `brew update && brew upgrade tether && brew services restart tether`
+8. **Update docs if UI changed:** README.md push notification section + `kmganesh-garden/content/projects/tether.md`
+
+**This is a public repo.** Never hardcode private hostnames, Tailscale DNS names, tokens, or any personal infrastructure details. Use dynamic lookups (e.g., `tailscale status --self --json`) or placeholders.
+
+## Writing docs for this project
+
+**Assume the reader is new to tmux, Tailscale, and self-hosting.** AI coding tools are bringing many people to terminal workflows for the first time. Don't assume tmux is a given — explain why it's needed and how to use it. The "Why tmux" and "tmux in 5 Minutes" sections on kmganesh.com exist because of this.
+
+When updating docs (README, kmganesh.com page), keep in sync:
+- **README.md** — technical reference for people who found the GitHub repo
+- **kmganesh.com tether page** (`create/kmganesh-garden/content/projects/tether.md`) — narrative guide for people who might not know what tmux is
+- Both must describe the same UI states, button labels, and setup steps
 
 ## Dev mode testing
 
@@ -84,6 +102,20 @@ If Claude gets killed ("zsh: killed claude") while using Tether mobile:
    ```bash
    dmesg | grep -i -E "killed|memory|oom" | tail -20
    ```
+
+## Push notification button states
+
+The bell icon in the header has 5 states, managed by `push_notifications.js`:
+
+| State | Label | Clickable | Trigger |
+|---|---|---|---|
+| Not supported | "Not supported" | No | Browser lacks Notification API |
+| Ready | "Off" | Yes → subscribe | Permission not yet requested |
+| Active | "On" | Yes → unsubscribe | Active push subscription |
+| In progress | "..." | No | Subscribe/unsubscribe in flight |
+| Blocked | "Blocked" | No | User denied permission in browser settings |
+
+Subscriptions stored in `$TETHER_DATA_DIR/subscriptions.json` (default `~/.local/share/tether/subscriptions.json`). ETS in-memory + JSON file persistence via `Tether.Notifier`.
 
 **Known issues:**
 - Terminal display corruption (horizontal lines) may occur during resize
