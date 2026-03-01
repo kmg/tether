@@ -20,9 +20,7 @@ defmodule TetherWeb.HomeLive do
        activities: %{},
        loading: true,
        show_new_session: false,
-       show_new_window: nil,
-       new_session_form: to_form(%{"name" => "", "windows" => "4"}, as: :session),
-       new_window_form: to_form(%{"name" => ""}, as: :window)
+       new_session_form: to_form(%{"name" => "", "windows" => "4"}, as: :session)
      )
      |> load_sessions()}
   end
@@ -45,9 +43,17 @@ defmodule TetherWeb.HomeLive do
     {:noreply, assign(socket, show_new_session: !socket.assigns.show_new_session)}
   end
 
-  def handle_event("toggle_new_window", %{"session" => session}, socket) do
-    current = socket.assigns.show_new_window
-    {:noreply, assign(socket, show_new_window: if(current == session, do: nil, else: session))}
+  def handle_event("add_window", %{"session" => session}, socket) do
+    case Tmux.new_window(session) do
+      {:ok, index} ->
+        {:noreply,
+         socket
+         |> load_sessions()
+         |> push_navigate(to: ~p"/terminal/#{session}/#{index}")}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, reason)}
+    end
   end
 
   def handle_event(
@@ -73,28 +79,6 @@ defmodule TetherWeb.HomeLive do
     end
   end
 
-  def handle_event("create_window", %{"window" => params}, socket) do
-    session = socket.assigns.show_new_window
-
-    name =
-      case String.trim(params["name"] || "") do
-        "" -> nil
-        n -> n
-      end
-
-    case Tmux.new_window(session, name) do
-      {:ok, index} ->
-        {:noreply,
-         socket
-         |> assign(show_new_window: nil)
-         |> assign(new_window_form: to_form(%{"name" => ""}, as: :window))
-         |> load_sessions()
-         |> push_navigate(to: ~p"/terminal/#{session}/#{index}")}
-
-      {:error, reason} ->
-        {:noreply, put_flash(socket, :error, reason)}
-    end
-  end
 
   defp load_sessions(socket) do
     case Tmux.list_all() do
@@ -253,7 +237,7 @@ defmodule TetherWeb.HomeLive do
                       <span class="text-gray-400 text-sm">({session.window_count} windows)</span>
                     </div>
                     <button
-                      phx-click="toggle_new_window"
+                      phx-click="add_window"
                       phx-value-session={session.name}
                       class="text-gray-400 hover:text-green-400 text-sm"
                     >
@@ -275,30 +259,6 @@ defmodule TetherWeb.HomeLive do
                             <.plain_row window={window} />
                           <% end %>
                         </.link>
-                      </li>
-                    <% end %>
-                    <%= if @show_new_window == session.name do %>
-                      <li class="px-4 py-3 bg-gray-750">
-                        <.form
-                          for={@new_window_form}
-                          id={"new-window-form-#{session.name}"}
-                          phx-submit="create_window"
-                          class="flex items-center gap-2"
-                        >
-                          <input
-                            type="text"
-                            name="window[name]"
-                            placeholder="window name (optional)"
-                            pattern="[a-zA-Z0-9_-]+"
-                            class="flex-1 bg-gray-900 border border-gray-600 rounded px-3 py-1.5 text-sm text-gray-100 focus:border-green-500 focus:outline-none"
-                          />
-                          <button
-                            type="submit"
-                            class="px-3 py-1.5 bg-green-700 hover:bg-green-600 text-white text-sm rounded"
-                          >
-                            Add
-                          </button>
-                        </.form>
                       </li>
                     <% end %>
                   </ul>

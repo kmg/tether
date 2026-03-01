@@ -1,230 +1,133 @@
 # Tether
 
-Monitor and respond to Claude Code from your phone.
+Control your AI coding agents from your phone.
 
-~4,900 lines of Elixir/LiveView. Self-hosted PWA over Tailscale.
+## How AI coding agents work
 
-Tether watches your tmux sessions and tells you when Claude needs input:
+You give an AI coding agent a task — "add user authentication" or "fix the checkout bug." The agent works on its own: reading your code, writing changes, running tests, iterating when something fails. This can go on for minutes or hours.
 
-- **Push notifications** — your phone buzzes when Claude transitions from working to waiting
-- **Activity detection** — see what Claude is doing at a glance (which tool, which file, waiting vs working)
-- **Mobile terminal** — full terminal in the browser with a mobile-friendly toolbar
-- **File attachments** — send images and files from your phone camera or library to the terminal
-- **Self-hosted** — runs on your own machine over Tailscale, no external dependencies
+But agents aren't fully autonomous. They regularly need your judgment: "Should I refactor this or patch it?" "Two approaches could work — which do you prefer?" "Tests pass but I'm not sure about this edge case." They stop and wait for you.
 
-### When to use Tether
+If you're at your desk, you answer and they continue. If you're not, the agent sits idle until you come back. That idle time adds up — especially when you're running multiple agents on different tasks.
 
-Claude Code's [Remote Control](https://code.claude.com/docs/en/remote-control) gives you mobile access to sessions. Tether is an alternative for long-running tasks where you want to walk away and get notified when Claude needs input. It adds a monitoring layer on top of tmux — pattern-matching terminal output to detect state transitions — plus push notifications and file attachments from your phone.
+## What Tether does
+
+Tether connects your phone to the agents running on your desktop or home server. Your phone buzzes the moment any agent needs you. Tap the notification, respond, put the phone down. The agent continues. The whole interaction takes ten seconds.
+
+You don't have to sit at your desk and watch. Start a few agents, step away, live your life. Check in from the couch, from a coffee shop, while cooking dinner. Your agents keep working and reach out when they need you.
+
+- Your phone buzzes when an agent needs input — you don't have to remember to check
+- Full terminal on your phone — not a simplified view, the real thing
+- See all your agents at a glance — which are working, which need you
+- Send files from your phone — screenshots, photos, documents straight into the terminal
+- Self-hosted on your own machine — nothing leaves your network
 
 ## Screenshots
 
-### Session browser
 <p align="center">
-  <img src="screenshots/home.jpeg" width="270" alt="Home — tmux sessions with Claude activity indicators" />
-  <img src="screenshots/needs-input.jpeg" width="270" alt="Window highlighted when Claude needs input" />
+  <img src="screenshots/home.jpeg" width="270" alt="Sessions with activity indicators" />
+  <img src="screenshots/needs-input.jpeg" width="270" alt="Agent needs input" />
+  <img src="screenshots/terminal-keyboard.jpeg" width="270" alt="Mobile terminal" />
+  <img src="screenshots/attach-file-picker.jpeg" width="270" alt="File attachments" />
+  <img src="screenshots/push-notifications.jpeg" width="270" alt="Push notifications" />
 </p>
 
-### Mobile terminal
-<p align="center">
-  <img src="screenshots/terminal.jpeg" width="270" alt="Terminal showing Claude Code output" />
-  <img src="screenshots/terminal-keyboard.jpeg" width="270" alt="Terminal with mobile keyboard and toolbar" />
-  <img src="screenshots/attach-file-picker.jpeg" width="270" alt="Attach files from phone camera or library" />
-</p>
+## What you need
 
-### Push notifications
-<p align="center">
-  <img src="screenshots/notification-prompt.jpeg" width="270" alt="iOS notification permission prompt" />
-  <img src="screenshots/notification-enabled.jpeg" width="270" alt="Notifications enabled confirmation" />
-  <img src="screenshots/push-notifications.jpeg" width="270" alt="Push notifications in iOS Notification Center" />
-</p>
+Tether builds on two tools:
 
-## How it works
+**tmux** keeps your agents running when you're not looking. Think of it as browser tabs for your terminal — close the window, switch devices, the agents keep going. If you've never used tmux, there's a [5-minute intro](https://kmganesh.com/projects/tether/#tmux-in-5-minutes) that explains it in terms you already know.
 
-You run Claude Code in tmux. Tether watches your tmux sessions,
-detects when Claude is waiting for input, and sends a push notification
-to your phone. Tap the notification, type your response in the
-browser terminal, and get back to what you were doing.
+**Tailscale** connects your devices on a private network. It's how your phone reaches your home machine securely — no port forwarding, no public servers. Takes about two minutes to set up.
 
-No SSH client app. No keyboard shortcuts. Just a browser.
+Both are `brew install` away. Tether runs on macOS (Apple Silicon).
 
-## Quick start
+## Get started
 
-### 1. Start Claude Code in tmux
+### 1. Install
 
-Tether monitors tmux sessions, so Claude Code needs to be running inside one:
+```bash
+brew install --cask tailscale  # if you don't have it yet
+brew tap kmg/tether
+brew install tether
+```
+
+### 2. Start an agent in tmux
 
 ```bash
 tmux new-session -s work
 claude
 ```
 
-If you already use tmux, you're set — Tether detects Claude in any window
-of any session.
+Already use tmux? Skip this — Tether detects Claude in any window of any session.
 
-### 2. Install and start Tether
+### 3. Connect your phone
 
-```bash
-brew tap kmg/tether
-brew install tether
-tether start
-```
-
-Open the URL printed in your terminal. It includes a one-time auth token —
-paste it into the login screen and you're in. The session lasts 30 days.
-
-## Authentication
-
-Tether generates a random token on first run, stored at
-`~/.local/share/tether/.token`. The token is printed to the terminal
-(or to `/opt/homebrew/var/log/tether.log` when using `brew services`).
-
-Every route requires authentication. On first visit you'll see a token
-input screen — paste the token from the URL or the file. Once
-authenticated, a session cookie keeps you logged in for 30 days.
-
-To use a custom token, set `TETHER_TOKEN` in your env file (see
-[Configuration](#configuration)).
-
-## Manual install
-
-Requires Elixir 1.15+ and Erlang/OTP 27+.
+Generate certificates so your phone can reach Tether securely:
 
 ```bash
-git clone https://github.com/kmg/tether.git
-cd tether
-mix setup
-mix phx.server
+TS_HOST=$(tailscale status --json | jq -r '.Self.DNSName' | sed 's/\.$//')
+mkdir -p ~/.local/share/tether/cert
+cd ~/.local/share/tether/cert
+tailscale cert "$TS_HOST"
 ```
 
-Open http://localhost:7374 in your browser.
+Tell Tether where to find them:
+
+```bash
+CERT_DIR="$HOME/.local/share/tether/cert"
+cat > ~/.local/share/tether/env <<EOF
+TLS_CERTFILE=$CERT_DIR/$TS_HOST.crt
+TLS_KEYFILE=$CERT_DIR/$TS_HOST.key
+PHX_HOST=$TS_HOST
+EOF
+```
+
+Start Tether and get the URL for your phone:
+
+```bash
+brew services start tether
+echo "https://$TS_HOST:7374?token=$(cat ~/.local/share/tether/.token)"
+```
+
+Open that URL on your phone. Paste the token. You stay logged in for 30 days.
+
+### 4. Turn on push notifications
+
+```bash
+grep -q "VAPID_PUBLIC_KEY" ~/.local/share/tether/env 2>/dev/null || tether setup-push >> ~/.local/share/tether/env
+brew services restart tether
+```
+
+On your phone, tap the **bell icon** in the header (shows **Off**). Accept the prompt — it switches to **On**.
+
+For background notifications, save to your home screen (iOS: Share → Add to Home Screen).
+
+Now walk away. Your phone will buzz when an agent needs you.
 
 ## Configuration
 
-Tether is configured via environment variables. When running as a release
-(via `brew install`), defaults are auto-generated on first run.
+Tether reads `~/.local/share/tether/env` on every start.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PORT` | `7374` | HTTP/HTTPS port |
 | `PHX_HOST` | `localhost` | Hostname for URLs |
 | `TETHER_TOKEN` | auto-generated | Auth token (printed on startup) |
-| `SECRET_KEY_BASE` | auto-generated | Phoenix session secret |
-| `TETHER_DATA_DIR` | `~/.local/share/tether` | Persistent data directory |
-| `TLS_CERTFILE` | — | Path to TLS certificate (enables HTTPS) |
-| `TLS_KEYFILE` | — | Path to TLS private key (enables HTTPS) |
-| `VAPID_PUBLIC_KEY` | — | VAPID public key (enables push notifications) |
-| `VAPID_PRIVATE_KEY` | — | VAPID private key (enables push notifications) |
-| `VAPID_SUBJECT` | `mailto:tether@example.com` | VAPID contact URI (must be a real domain) |
+| `TLS_CERTFILE` | — | TLS certificate (enables HTTPS) |
+| `TLS_KEYFILE` | — | TLS private key (enables HTTPS) |
+| `VAPID_PUBLIC_KEY` | — | Enables push notifications |
+| `VAPID_PRIVATE_KEY` | — | Enables push notifications |
 
-### Env file
+Any TLS certs work — Tailscale is recommended but not required.
 
-The recommended way to configure a brew-installed Tether is the env file
-at `~/.local/share/tether/env`. It's sourced on every start — no need to
-modify your shell profile.
+### Compared to Remote Control
 
-```bash
-# ~/.local/share/tether/env
-TLS_CERTFILE=/Users/you/.local/share/tether/cert/your-host.ts.net.crt
-TLS_KEYFILE=/Users/you/.local/share/tether/cert/your-host.ts.net.key
-PHX_HOST=your-host.ts.net
-VAPID_PUBLIC_KEY=BLa...
-VAPID_PRIVATE_KEY=dGV...
-```
+Claude Code's [Remote Control](https://code.claude.com/docs/en/remote-control) gives you mobile access to individual sessions. Tether is for when you're running agents on a home server and want push notifications across all your sessions plus a mobile-optimized terminal.
 
-No `export` needed — the release script handles that.
+## Architecture
 
-### HTTPS via Tailscale
-
-Tether runs HTTP on localhost by default. For phone access and push
-notifications, you need HTTPS. Tailscale gives you free TLS certs
-that work across your private network.
-
-1. Install Tailscale: `brew install --cask tailscale`
-
-2. Get your machine's hostname:
-
-    ```bash
-    tailscale status --json | jq -r '.Self.DNSName' | sed 's/\.$//'
-    ```
-
-3. Generate certs and move them to Tether's data dir:
-
-    ```bash
-    mkdir -p ~/.local/share/tether/cert
-    cd ~/.local/share/tether/cert
-    tailscale cert YOUR-MACHINE.tail1234.ts.net
-    ```
-
-4. Create the env file:
-
-    ```bash
-    cat > ~/.local/share/tether/env << 'EOF'
-    TLS_CERTFILE=/Users/you/.local/share/tether/cert/YOUR-MACHINE.tail1234.ts.net.crt
-    TLS_KEYFILE=/Users/you/.local/share/tether/cert/YOUR-MACHINE.tail1234.ts.net.key
-    PHX_HOST=YOUR-MACHINE.tail1234.ts.net
-    EOF
-    ```
-
-5. Restart Tether:
-
-    ```bash
-    brew services restart tether
-    ```
-
-6. Open `https://YOUR-MACHINE.tail1234.ts.net:7374` on your phone
-   (must be on the same Tailscale network).
-
-### HTTPS without Tailscale
-
-Any TLS certs work. Add `TLS_CERTFILE` and `TLS_KEYFILE` to your env file.
-When both are set and the files exist, Tether switches to HTTPS automatically.
-
-### Push notifications
-
-Push notifications require **HTTPS** (or localhost). Browsers only allow
-Service Workers — which power push notifications — on secure contexts.
-If you're accessing Tether over `http://192.168.x.x`, push won't work.
-Set up HTTPS first (see above).
-
-1. Generate VAPID keys and add to your env file:
-
-    ```bash
-    tether setup-push >> ~/.local/share/tether/env
-    brew services restart tether
-    ```
-
-2. Open Tether on your phone. You'll see a **bell icon** in the top-right
-   header showing **Off**. Tap it and accept the browser notification prompt.
-   The bell will switch to **On**.
-
-   The bell icon has five states:
-   - **Off** — ready to enable (tap to subscribe)
-   - **On** — active (tap to unsubscribe)
-   - **Blocked** — you denied the browser permission prompt. Reset in your
-     browser's notification settings.
-   - **Not supported** — your browser doesn't support push notifications.
-   - **...** — subscription in progress.
-
-3. **Add to Home Screen** — for an app-like experience, save Tether to
-   your home screen. On iOS Safari: tap the share button → "Add to Home
-   Screen". On Android Chrome: tap the menu → "Add to Home screen".
-   This gives you a standalone window (no browser chrome) and ensures
-   notifications work reliably in the background.
-
-## Development
-
-```bash
-cp .env.example .env
-# Edit .env with your values
-source .env && mix phx.server
-```
-
-## How tmux detection works
-
-Tether polls `tmux list-windows` and reads pane content to detect Claude Code's
-activity indicator. When Claude transitions from "working" to "waiting for input",
-Tether sends a push notification. The detection is based on terminal content
-pattern matching — no Claude API integration required.
+See [ARCHITECTURE.md](ARCHITECTURE.md) for how detection works, the notification pipeline, and the technology stack.
 
 ## License
 
