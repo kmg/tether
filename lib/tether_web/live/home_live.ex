@@ -137,20 +137,44 @@ defmodule TetherWeb.HomeLive do
           <h1 class="text-lg font-semibold">Tether</h1>
           <span class="text-xs text-gray-600">v{Application.spec(:tether, :vsn)}</span>
         </div>
-        <div class="flex items-center gap-2">
-          <button
-            phx-click="toggle_new_session"
-            class="text-gray-400 hover:text-green-400 text-sm"
-          >
-            + Session
-          </button>
+        <div class="flex items-center gap-3">
           <button
             id="push-btn"
             phx-hook="PushNotifications"
             phx-update="ignore"
-            class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded"
+            style="display:flex;flex-direction:column;align-items:center;gap:2px;color:#6b7280;width:40px"
           >
-            Enable Notifications
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.5"
+              stroke="currentColor"
+              style="width:16px;height:16px"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"
+              />
+            </svg>
+            <span style="font-size:10px;line-height:1">Notify</span>
+          </button>
+          <button
+            phx-click="toggle_new_session"
+            style="display:flex;flex-direction:column;align-items:center;gap:2px;color:#6b7280;width:40px"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.5"
+              stroke="currentColor"
+              style="width:16px;height:16px"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            <span style="font-size:10px;line-height:1">Session</span>
           </button>
         </div>
       </header>

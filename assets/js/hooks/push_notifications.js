@@ -1,8 +1,12 @@
 // Push notifications hook for LiveView
 import { setupPushNotifications } from "../push"
 
+const BASE_STYLE = "display:flex;flex-direction:column;align-items:center;gap:2px;min-width:40px"
+
 const PushNotificationsHook = {
   mounted() {
+    this.label = this.el.querySelector("span")
+    this._enabled = false
     this.setupClickHandler()
     this.updateButtonState()
   },
@@ -16,35 +20,77 @@ const PushNotificationsHook = {
     this._clickBound = true
 
     this.el.addEventListener("click", async () => {
-      this.el.textContent = "Setting up..."
-      this.el.disabled = true
-
-      try {
-        const success = await setupPushNotifications()
-        if (success) {
-          this.setCompact("Push ✓", "bg-green-700")
-        } else {
-          this.el.textContent = "Failed - Tap to Retry"
-          this.el.disabled = false
+      if (this._enabled) {
+        await this.unsubscribe()
+      } else {
+        this.setState("setting-up")
+        try {
+          const success = await setupPushNotifications()
+          this.setState(success ? "enabled" : "enable")
+        } catch (error) {
+          console.error("Push setup failed:", error)
+          this.setState("enable")
         }
-      } catch (error) {
-        console.error("Push setup failed:", error)
-        this.el.textContent = "Error - Tap to Retry"
-        this.el.disabled = false
       }
     })
   },
 
-  setCompact(text, bgClass) {
-    this.el.textContent = text
-    this.el.classList.remove("bg-blue-600", "hover:bg-blue-500", "px-3", "py-1.5")
-    this.el.classList.add(bgClass, "px-2", "py-1", "text-xs")
+  async unsubscribe() {
+    this.setState("setting-up")
+    try {
+      const reg = await navigator.serviceWorker.ready
+      const subscription = await reg.pushManager.getSubscription()
+      if (subscription) {
+        await subscription.unsubscribe()
+        await fetch("/api/push/subscribe", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ endpoint: subscription.endpoint }),
+        })
+      }
+      this.setState("enable")
+    } catch (error) {
+      console.error("Push unsubscribe failed:", error)
+      this.setState("enabled")
+    }
+  },
+
+  setState(state) {
+    this.el.disabled = false
+    this.el.style.cssText = BASE_STYLE
+    this._enabled = false
+
+    switch (state) {
+      case "not-supported":
+        this.label.textContent = "Not supported"
+        this.el.style.cssText = BASE_STYLE + ";color:#374151"
+        this.el.disabled = true
+        break
+      case "enable":
+        this.label.textContent = "Off"
+        this.el.style.cssText = BASE_STYLE + ";color:#6b7280"
+        break
+      case "enabled":
+        this.label.textContent = "On"
+        this.el.style.cssText = BASE_STYLE + ";color:#4b5563"
+        this._enabled = true
+        break
+      case "setting-up":
+        this.label.textContent = "..."
+        this.el.style.cssText = BASE_STYLE + ";color:#4b5563"
+        this.el.disabled = true
+        break
+      case "blocked":
+        this.label.textContent = "Blocked"
+        this.el.style.cssText = BASE_STYLE + ";color:#4b5563"
+        this.el.disabled = true
+        break
+    }
   },
 
   async updateButtonState() {
     if (!("Notification" in window)) {
-      this.setCompact("N/A", "bg-gray-600")
-      this.el.disabled = true
+      this.setState("not-supported")
       return
     }
 
@@ -52,7 +98,7 @@ const PushNotificationsHook = {
       const reg = await navigator.serviceWorker.ready
       const subscription = await reg.pushManager.getSubscription()
       if (subscription) {
-        this.setCompact("Push ✓", "bg-green-700")
+        this.setState("enabled")
         // Tell server this is the active endpoint, prune stale ones
         fetch("/api/push/confirm", {
           method: "POST",
@@ -61,19 +107,17 @@ const PushNotificationsHook = {
         }).catch(() => {})
       } else {
         // Permission granted but subscription lost (iOS purges these)
-        // Auto-resubscribe silently
         try {
           const success = await setupPushNotifications()
-          if (success) {
-            this.setCompact("Push ✓", "bg-green-700")
-          }
+          if (success) this.setState("enabled")
         } catch (e) {
           console.warn("Auto-resubscribe failed:", e)
         }
       }
     } else if (Notification.permission === "denied") {
-      this.setCompact("Blocked", "bg-red-700")
-      this.el.disabled = true
+      this.setState("blocked")
+    } else {
+      this.setState("enable")
     }
   }
 }

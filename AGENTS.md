@@ -26,20 +26,30 @@ Do NOT run `mix phx.server` directly as it will skip loading the `.env` file and
 To test changes without disrupting the production Tailscale-served instance:
 
 ```bash
+# HTTP (local only, no push notification testing)
 MIX_ENV=dev PORT=17374 elixir --erl "-elixir ansi_enabled true" -S mix phx.server
+```
+
+```bash
+# HTTPS (accessible from phone via Tailscale, push notifications work)
+# Get your hostname: tailscale status --self --json | jq -r '.Self.DNSName' | sed 's/\.$//'
+TS_HOST=$(tailscale status --self --json | python3 -c "import sys,json; print(json.load(sys.stdin)['Self']['DNSName'].rstrip('.'))")
+tailscale cert --cert-file /tmp/tether-certs/cert.pem --key-file /tmp/tether-certs/key.pem "$TS_HOST"
+TLS_CERTFILE=/tmp/tether-certs/cert.pem TLS_KEYFILE=/tmp/tether-certs/key.pem TAILSCALE_HOSTNAME="$TS_HOST" PORT=17374 MIX_ENV=dev elixir --erl "-elixir ansi_enabled true" -S mix phx.server
+# Phone URL: https://$TS_HOST:17374
 ```
 
 Then verify with curl:
 ```bash
-curl -s -o /dev/null -w '%{http_code}' http://localhost:17374        # Home page 200
-curl -s http://localhost:17374 | grep -o 'v[0-9]\.[0-9]\.[0-9]'     # Version shows
-curl -s http://localhost:17374/assets/js/app.js | grep 'functionName' # Built JS has changes
-curl -s -o /dev/null -w '%{http_code}' http://localhost:17374/terminal/lifeos/0  # Terminal page 200
+curl -s -o /dev/null -w '%{http_code}' http://localhost:17374        # Home page 200 (HTTP mode)
+curl -sk -o /dev/null -w '%{http_code}' "https://$TS_HOST:17374"     # HTTPS mode
 ```
 
 Kill when done: `lsof -ti:17374 | xargs kill`
 
-For Playwright MCP browser testing: Chrome must be fully closed first (Playwright can't launch if Chrome is already running — it tries to reuse the session and exits). Kill Chrome, then use `browser_navigate` to `http://localhost:17374`. Use `browser_evaluate` to test JS logic (encoding, paste events) and `browser_snapshot` to verify DOM state.
+**Always test UI changes on the phone via HTTPS dev before releasing.** Use Playwright for quick iteration, then confirm on phone before commit. Don't rush releases — get user sign-off on the phone first.
+
+For Playwright MCP browser testing: Chrome must be fully closed first (Playwright can't launch if Chrome is already running — it tries to reuse the session and exits). Kill Chrome, then use `browser_navigate` to `http://localhost:17374`. Use `browser_evaluate` to test JS logic (encoding, paste events) and `browser_snapshot` to verify DOM state. Note: LiveView hooks may not bind properly in Playwright headless — use it for layout/DOM checks, not JS hook behavior.
 
 ## Debugging
 
