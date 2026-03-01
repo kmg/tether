@@ -22,9 +22,7 @@ const PushNotificationsHook = {
       try {
         const success = await setupPushNotifications()
         if (success) {
-          this.el.textContent = "Notifications Enabled ✓"
-          this.el.classList.remove("bg-blue-600", "hover:bg-blue-500")
-          this.el.classList.add("bg-green-600")
+          this.setCompact("Push ✓", "bg-green-700")
         } else {
           this.el.textContent = "Failed - Tap to Retry"
           this.el.disabled = false
@@ -37,12 +35,16 @@ const PushNotificationsHook = {
     })
   },
 
+  setCompact(text, bgClass) {
+    this.el.textContent = text
+    this.el.classList.remove("bg-blue-600", "hover:bg-blue-500", "px-3", "py-1.5")
+    this.el.classList.add(bgClass, "px-2", "py-1", "text-xs")
+  },
+
   async updateButtonState() {
     if (!("Notification" in window)) {
-      this.el.textContent = "Not Supported"
+      this.setCompact("N/A", "bg-gray-600")
       this.el.disabled = true
-      this.el.classList.remove("bg-blue-600", "hover:bg-blue-500")
-      this.el.classList.add("bg-gray-600")
       return
     }
 
@@ -50,9 +52,7 @@ const PushNotificationsHook = {
       const reg = await navigator.serviceWorker.ready
       const subscription = await reg.pushManager.getSubscription()
       if (subscription) {
-        this.el.textContent = "Notifications Enabled ✓"
-        this.el.classList.remove("bg-blue-600", "hover:bg-blue-500")
-        this.el.classList.add("bg-green-600")
+        this.setCompact("Push ✓", "bg-green-700")
         // Tell server this is the active endpoint, prune stale ones
         fetch("/api/push/confirm", {
           method: "POST",
@@ -65,19 +65,15 @@ const PushNotificationsHook = {
         try {
           const success = await setupPushNotifications()
           if (success) {
-            this.el.textContent = "Notifications Enabled ✓"
-            this.el.classList.remove("bg-blue-600", "hover:bg-blue-500")
-            this.el.classList.add("bg-green-600")
+            this.setCompact("Push ✓", "bg-green-700")
           }
         } catch (e) {
           console.warn("Auto-resubscribe failed:", e)
         }
       }
     } else if (Notification.permission === "denied") {
-      this.el.textContent = "Blocked"
+      this.setCompact("Blocked", "bg-red-700")
       this.el.disabled = true
-      this.el.classList.remove("bg-blue-600", "hover:bg-blue-500")
-      this.el.classList.add("bg-red-600")
     }
   }
 }
