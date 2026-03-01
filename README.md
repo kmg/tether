@@ -186,30 +186,15 @@ Service Workers — which power push notifications — on secure contexts.
 If you're accessing Tether over `http://192.168.x.x`, push won't work.
 Set up HTTPS first (see above).
 
-1. Generate VAPID keys:
+1. Generate VAPID keys and add to your env file:
 
     ```bash
-    tether remote
-    iex> Tether.Notifier.generate_vapid_keys()
-    ```
-
-    This prints a public/private key pair.
-
-2. Add the keys to your env file (`~/.local/share/tether/env`):
-
-    ```
-    VAPID_PUBLIC_KEY=BLa...
-    VAPID_PRIVATE_KEY=dGV...
-    ```
-
-3. Restart Tether:
-
-    ```bash
+    tether setup-push >> ~/.local/share/tether/env
     brew services restart tether
     ```
 
-4. Open Tether in your phone's browser and accept the notification
-   prompt. You'll get a push whenever Claude is waiting for input.
+2. Open Tether in your phone's browser and tap **Enable Notifications**
+   in the top-right. Accept the browser notification prompt.
 
 5. **Add to Home Screen** — for an app-like experience, save Tether to
    your home screen. On iOS Safari: tap the share button → "Add to Home
