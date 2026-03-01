@@ -53,8 +53,8 @@ vapid_public = System.get_env("VAPID_PUBLIC_KEY")
 vapid_private = System.get_env("VAPID_PRIVATE_KEY")
 
 if vapid_public && vapid_private do
-  config :web_push_encryption,
-    vapid_details: [
+  config :tether,
+    vapid: [
       public_key: vapid_public,
       private_key: vapid_private,
       subject: System.get_env("VAPID_SUBJECT", "mailto:tether@example.com")

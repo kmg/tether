@@ -141,7 +141,7 @@ defmodule Tether.Notifier do
   end
 
   defp vapid_configured? do
-    case Application.get_env(:web_push_encryption, :vapid_details) do
+    case Application.get_env(:tether, :vapid) do
       nil -> false
       details -> details[:public_key] && details[:private_key]
     end
@@ -164,7 +164,7 @@ defmodule Tether.Notifier do
   Get the public VAPID key for client subscription.
   """
   def vapid_public_key do
-    case Application.get_env(:web_push_encryption, :vapid_details) do
+    case Application.get_env(:tether, :vapid) do
       nil -> nil
       details -> details[:public_key]
     end

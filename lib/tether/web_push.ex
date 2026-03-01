@@ -2,8 +2,8 @@ defmodule Tether.WebPush do
   @moduledoc """
   Web Push with aes128gcm encoding (RFC 8291) and VAPID (RFC 8292).
 
-  Replaces `web_push_encryption` which only supports the deprecated aesgcm
-  encoding. Apple's push service requires aes128gcm.
+  Standalone implementation using only Erlang :crypto and :httpc.
+  Apple's push service requires aes128gcm (not the deprecated aesgcm).
   """
   require Logger
 
@@ -13,7 +13,7 @@ defmodule Tether.WebPush do
   Subscription must have: `%{endpoint: "...", keys: %{auth: "...", p256dh: "..."}}`
   """
   def send(message, subscription) when is_binary(message) do
-    vapid = Application.fetch_env!(:web_push_encryption, :vapid_details)
+    vapid = Application.fetch_env!(:tether, :vapid)
 
     audience = extract_audience(subscription.endpoint)
     jwt = build_vapid_jwt(audience, vapid)

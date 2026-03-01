@@ -4,7 +4,7 @@ defmodule Tether.MixProject do
   def project do
     [
       app: :tether,
-      version: "0.1.16",
+      version: "0.1.17",
       elixir: "~> 1.15",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
@@ -68,8 +68,6 @@ defmodule Tether.MixProject do
       {:jason, "~> 1.2"},
       {:bandit, "~> 1.5"},
       # Tether-specific
-      # Web Push notifications
-      {:web_push_encryption, "~> 0.3"},
       # PTY-like process control for tmux
       {:erlexec, "~> 2.0"}
     ]
