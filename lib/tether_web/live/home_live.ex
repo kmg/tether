@@ -14,7 +14,16 @@ defmodule TetherWeb.HomeLive do
 
     {:ok,
      socket
-     |> assign(sessions: [], waiting: MapSet.new(), activities: %{}, loading: true)
+     |> assign(
+       sessions: [],
+       waiting: MapSet.new(),
+       activities: %{},
+       loading: true,
+       show_new_session: false,
+       show_new_window: nil,
+       new_session_form: to_form(%{"name" => "", "windows" => "4"}, as: :session),
+       new_window_form: to_form(%{"name" => ""}, as: :window)
+     )
      |> load_sessions()}
   end
 
@@ -30,6 +39,61 @@ defmodule TetherWeb.HomeLive do
 
   def handle_info({:activity, target, activity}, socket) do
     {:noreply, update(socket, :activities, &Map.put(&1, target, activity))}
+  end
+
+  def handle_event("toggle_new_session", _params, socket) do
+    {:noreply, assign(socket, show_new_session: !socket.assigns.show_new_session)}
+  end
+
+  def handle_event("toggle_new_window", %{"session" => session}, socket) do
+    current = socket.assigns.show_new_window
+    {:noreply, assign(socket, show_new_window: if(current == session, do: nil, else: session))}
+  end
+
+  def handle_event(
+        "create_session",
+        %{"session" => %{"name" => name, "windows" => windows_str}},
+        socket
+      ) do
+    name = String.trim(name)
+    window_count = max(String.to_integer(windows_str), 1)
+
+    case Tmux.new_session(name) do
+      {:ok, _} ->
+        Enum.each(2..window_count//1, fn _ -> Tmux.new_window(name) end)
+
+        {:noreply,
+         socket
+         |> assign(show_new_session: false)
+         |> assign(new_session_form: to_form(%{"name" => "", "windows" => "4"}, as: :session))
+         |> load_sessions()}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, reason)}
+    end
+  end
+
+  def handle_event("create_window", %{"window" => params}, socket) do
+    session = socket.assigns.show_new_window
+
+    name =
+      case String.trim(params["name"] || "") do
+        "" -> nil
+        n -> n
+      end
+
+    case Tmux.new_window(session, name) do
+      {:ok, index} ->
+        {:noreply,
+         socket
+         |> assign(show_new_window: nil)
+         |> assign(new_window_form: to_form(%{"name" => ""}, as: :window))
+         |> load_sessions()
+         |> push_navigate(to: ~p"/terminal/#{session}/#{index}")}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, reason)}
+    end
   end
 
   defp load_sessions(socket) do
@@ -73,15 +137,71 @@ defmodule TetherWeb.HomeLive do
           </div>
           <p class="text-sm text-gray-400">tmux sessions</p>
         </div>
-        <button
-          id="push-btn"
-          phx-hook="PushNotifications"
-          phx-update="ignore"
-          class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded"
-        >
-          Enable Notifications
-        </button>
+        <div class="flex items-center gap-2">
+          <button
+            phx-click="toggle_new_session"
+            class="px-3 py-1.5 bg-green-700 hover:bg-green-600 text-white text-sm rounded"
+          >
+            + Session
+          </button>
+          <button
+            id="push-btn"
+            phx-hook="PushNotifications"
+            phx-update="ignore"
+            class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded"
+          >
+            Enable Notifications
+          </button>
+        </div>
       </header>
+
+      <%= if @show_new_session do %>
+        <div class="bg-gray-800 border-b border-gray-700 px-4 py-3">
+          <.form
+            for={@new_session_form}
+            id="new-session-form"
+            phx-submit="create_session"
+            class="flex items-end gap-3"
+          >
+            <div class="flex-1">
+              <label class="block text-xs text-gray-400 mb-1">Session name</label>
+              <input
+                type="text"
+                name="session[name]"
+                value={@new_session_form[:name].value}
+                placeholder="work"
+                required
+                pattern="[a-zA-Z0-9_-]+"
+                class="w-full bg-gray-900 border border-gray-600 rounded px-3 py-1.5 text-sm text-gray-100 focus:border-green-500 focus:outline-none"
+              />
+            </div>
+            <div class="w-20">
+              <label class="block text-xs text-gray-400 mb-1">Windows</label>
+              <input
+                type="number"
+                name="session[windows]"
+                value={@new_session_form[:windows].value}
+                min="1"
+                max="20"
+                class="w-full bg-gray-900 border border-gray-600 rounded px-3 py-1.5 text-sm text-gray-100 focus:border-green-500 focus:outline-none"
+              />
+            </div>
+            <button
+              type="submit"
+              class="px-4 py-1.5 bg-green-700 hover:bg-green-600 text-white text-sm rounded"
+            >
+              Create
+            </button>
+            <button
+              type="button"
+              phx-click="toggle_new_session"
+              class="px-3 py-1.5 text-gray-400 hover:text-gray-200 text-sm"
+            >
+              Cancel
+            </button>
+          </.form>
+        </div>
+      <% end %>
 
       <main class="p-4">
         <%= if @loading do %>
@@ -99,9 +219,18 @@ defmodule TetherWeb.HomeLive do
             <div class="space-y-4">
               <%= for session <- @sessions do %>
                 <div class="bg-gray-800 rounded-lg overflow-hidden">
-                  <div class="px-4 py-2 bg-gray-700 font-medium flex items-center gap-2">
-                    <span>{session.name}</span>
-                    <span class="text-gray-400 text-sm">({session.window_count} windows)</span>
+                  <div class="px-4 py-2 bg-gray-700 font-medium flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <span>{session.name}</span>
+                      <span class="text-gray-400 text-sm">({session.window_count} windows)</span>
+                    </div>
+                    <button
+                      phx-click="toggle_new_window"
+                      phx-value-session={session.name}
+                      class="text-gray-400 hover:text-green-400 text-sm"
+                    >
+                      +
+                    </button>
                   </div>
                   <ul class="divide-y divide-gray-700">
                     <%= for window <- session.windows do %>
@@ -118,6 +247,30 @@ defmodule TetherWeb.HomeLive do
                             <.plain_row window={window} />
                           <% end %>
                         </.link>
+                      </li>
+                    <% end %>
+                    <%= if @show_new_window == session.name do %>
+                      <li class="px-4 py-3 bg-gray-750">
+                        <.form
+                          for={@new_window_form}
+                          id={"new-window-form-#{session.name}"}
+                          phx-submit="create_window"
+                          class="flex items-center gap-2"
+                        >
+                          <input
+                            type="text"
+                            name="window[name]"
+                            placeholder="window name (optional)"
+                            pattern="[a-zA-Z0-9_-]+"
+                            class="flex-1 bg-gray-900 border border-gray-600 rounded px-3 py-1.5 text-sm text-gray-100 focus:border-green-500 focus:outline-none"
+                          />
+                          <button
+                            type="submit"
+                            class="px-3 py-1.5 bg-green-700 hover:bg-green-600 text-white text-sm rounded"
+                          >
+                            Add
+                          </button>
+                        </.form>
                       </li>
                     <% end %>
                   </ul>

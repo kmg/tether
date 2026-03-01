@@ -123,6 +123,46 @@ defmodule Tether.Tmux do
     end
   end
 
+  @name_pattern ~r/^[a-zA-Z0-9_-]+$/
+
+  @doc """
+  Create a new tmux session.
+  Returns {:ok, name} or {:error, reason}.
+  """
+  def new_session(name) when is_binary(name) do
+    if Regex.match?(@name_pattern, name) do
+      case System.cmd("tmux", ["new-session", "-d", "-s", name], stderr_to_stdout: true) do
+        {_, 0} -> {:ok, name}
+        {error, _} -> {:error, String.trim(error)}
+      end
+    else
+      {:error, "invalid name: only alphanumeric, hyphens, and underscores allowed"}
+    end
+  end
+
+  @doc """
+  Create a new window in an existing session.
+  Returns {:ok, index} or {:error, reason}.
+  """
+  def new_window(session, name \\ nil) when is_binary(session) do
+    if name && !Regex.match?(@name_pattern, name) do
+      {:error, "invalid name: only alphanumeric, hyphens, and underscores allowed"}
+    else
+      args =
+        ["new-window", "-t", session, "-P", "-F", "\#{window_index}"] ++
+          if(name, do: ["-n", name], else: [])
+
+      case System.cmd("tmux", args, stderr_to_stdout: true) do
+        {output, 0} ->
+          index = output |> String.trim() |> String.to_integer()
+          {:ok, index}
+
+        {error, _} ->
+          {:error, String.trim(error)}
+      end
+    end
+  end
+
   @doc """
   Find all windows running Claude across all sessions.
   Returns [{session_name, window_index, window_name}, ...]
