@@ -128,7 +128,7 @@ defmodule TetherWeb.HomeLive do
 
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen bg-gray-900 text-gray-100">
+    <div class="fixed inset-0 bg-gray-900 text-gray-100 overflow-y-auto">
       <header class="bg-gray-800 border-b border-gray-700 px-4 py-3 flex items-center justify-between">
         <div>
           <div class="flex items-baseline gap-2">
@@ -137,71 +137,15 @@ defmodule TetherWeb.HomeLive do
           </div>
           <p class="text-sm text-gray-400">tmux sessions</p>
         </div>
-        <div class="flex items-center gap-2">
-          <button
-            phx-click="toggle_new_session"
-            class="px-3 py-1.5 bg-green-700 hover:bg-green-600 text-white text-sm rounded"
-          >
-            + Session
-          </button>
-          <button
-            id="push-btn"
-            phx-hook="PushNotifications"
-            phx-update="ignore"
-            class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded"
-          >
-            Enable Notifications
-          </button>
-        </div>
+        <button
+          id="push-btn"
+          phx-hook="PushNotifications"
+          phx-update="ignore"
+          class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded"
+        >
+          Enable Notifications
+        </button>
       </header>
-
-      <%= if @show_new_session do %>
-        <div class="bg-gray-800 border-b border-gray-700 px-4 py-3">
-          <.form
-            for={@new_session_form}
-            id="new-session-form"
-            phx-submit="create_session"
-            class="flex items-end gap-3"
-          >
-            <div class="flex-1">
-              <label class="block text-xs text-gray-400 mb-1">Session name</label>
-              <input
-                type="text"
-                name="session[name]"
-                value={@new_session_form[:name].value}
-                placeholder="work"
-                required
-                pattern="[a-zA-Z0-9_-]+"
-                class="w-full bg-gray-900 border border-gray-600 rounded px-3 py-1.5 text-sm text-gray-100 focus:border-green-500 focus:outline-none"
-              />
-            </div>
-            <div class="w-20">
-              <label class="block text-xs text-gray-400 mb-1">Windows</label>
-              <input
-                type="number"
-                name="session[windows]"
-                value={@new_session_form[:windows].value}
-                min="1"
-                max="20"
-                class="w-full bg-gray-900 border border-gray-600 rounded px-3 py-1.5 text-sm text-gray-100 focus:border-green-500 focus:outline-none"
-              />
-            </div>
-            <button
-              type="submit"
-              class="px-4 py-1.5 bg-green-700 hover:bg-green-600 text-white text-sm rounded"
-            >
-              Create
-            </button>
-            <button
-              type="button"
-              phx-click="toggle_new_session"
-              class="px-3 py-1.5 text-gray-400 hover:text-gray-200 text-sm"
-            >
-              Cancel
-            </button>
-          </.form>
-        </div>
-      <% end %>
 
       <main class="p-4">
         <%= if @loading do %>
@@ -275,6 +219,67 @@ defmodule TetherWeb.HomeLive do
                     <% end %>
                   </ul>
                 </div>
+              <% end %>
+
+              <%= if @show_new_session do %>
+                <div class="bg-gray-800 rounded-lg overflow-hidden">
+                  <div class="px-4 py-3">
+                    <.form
+                      for={@new_session_form}
+                      id="new-session-form"
+                      phx-submit="create_session"
+                      class="space-y-3"
+                    >
+                      <div class="flex gap-3">
+                        <div class="flex-1">
+                          <label class="block text-xs text-gray-400 mb-1">Session name</label>
+                          <input
+                            type="text"
+                            name="session[name]"
+                            value={@new_session_form[:name].value}
+                            placeholder="work"
+                            required
+                            pattern="[a-zA-Z0-9_-]+"
+                            class="w-full bg-gray-900 border border-gray-600 rounded px-3 py-1.5 text-sm text-gray-100 focus:border-green-500 focus:outline-none"
+                          />
+                        </div>
+                        <div class="w-20">
+                          <label class="block text-xs text-gray-400 mb-1">Windows</label>
+                          <input
+                            type="number"
+                            name="session[windows]"
+                            value={@new_session_form[:windows].value}
+                            min="1"
+                            max="20"
+                            class="w-full bg-gray-900 border border-gray-600 rounded px-3 py-1.5 text-sm text-gray-100 focus:border-green-500 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                      <div class="flex gap-2">
+                        <button
+                          type="submit"
+                          class="flex-1 py-1.5 bg-green-700 hover:bg-green-600 text-white text-sm rounded"
+                        >
+                          Create Session
+                        </button>
+                        <button
+                          type="button"
+                          phx-click="toggle_new_session"
+                          class="px-4 py-1.5 text-gray-400 hover:text-gray-200 text-sm"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </.form>
+                  </div>
+                </div>
+              <% else %>
+                <button
+                  phx-click="toggle_new_session"
+                  class="w-full py-2.5 border border-dashed border-gray-700 rounded-lg text-gray-500 hover:text-gray-300 hover:border-gray-500 text-sm transition-colors"
+                >
+                  + New Session
+                </button>
               <% end %>
             </div>
           <% end %>

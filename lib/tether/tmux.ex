@@ -126,12 +126,29 @@ defmodule Tether.Tmux do
   @name_pattern ~r/^[a-zA-Z0-9_-]+$/
 
   @doc """
+  Get the working directory of a session's active pane.
+  """
+  def session_cwd(session) do
+    case System.cmd("tmux", ["display-message", "-t", session, "-p", "\#{pane_current_path}"],
+           stderr_to_stdout: true
+         ) do
+      {output, 0} -> {:ok, String.trim(output)}
+      {_, _} -> {:error, :not_found}
+    end
+  end
+
+  @doc """
   Create a new tmux session.
+  Options: [cwd: path] to set the starting directory (defaults to $HOME).
   Returns {:ok, name} or {:error, reason}.
   """
-  def new_session(name) when is_binary(name) do
+  def new_session(name, opts \\ []) when is_binary(name) do
     if Regex.match?(@name_pattern, name) do
-      case System.cmd("tmux", ["new-session", "-d", "-s", name], stderr_to_stdout: true) do
+      cwd = Keyword.get(opts, :cwd, System.user_home!())
+
+      args = ["new-session", "-d", "-s", name, "-c", cwd]
+
+      case System.cmd("tmux", args, stderr_to_stdout: true) do
         {_, 0} -> {:ok, name}
         {error, _} -> {:error, String.trim(error)}
       end
@@ -142,14 +159,28 @@ defmodule Tether.Tmux do
 
   @doc """
   Create a new window in an existing session.
+  Options: [cwd: path] to set the working directory (defaults to session's current pane dir).
   Returns {:ok, index} or {:error, reason}.
   """
-  def new_window(session, name \\ nil) when is_binary(session) do
+  def new_window(session, name \\ nil, opts \\ []) when is_binary(session) do
     if name && !Regex.match?(@name_pattern, name) do
       {:error, "invalid name: only alphanumeric, hyphens, and underscores allowed"}
     else
+      cwd =
+        case Keyword.get(opts, :cwd) do
+          nil ->
+            case session_cwd(session) do
+              {:ok, path} -> path
+              _ -> nil
+            end
+
+          path ->
+            path
+        end
+
       args =
         ["new-window", "-t", session, "-P", "-F", "\#{window_index}"] ++
+          if(cwd, do: ["-c", cwd], else: []) ++
           if(name, do: ["-n", name], else: [])
 
       case System.cmd("tmux", args, stderr_to_stdout: true) do
