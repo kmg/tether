@@ -105,6 +105,14 @@ For background notifications, save to your home screen (iOS: Share → Add to Ho
 
 Now walk away. Your phone will buzz when an agent needs you.
 
+## Updating
+
+```bash
+brew update
+brew upgrade tether
+brew services restart tether
+```
+
 ## Configuration
 
 Tether reads `~/.local/share/tether/env` on every start.
