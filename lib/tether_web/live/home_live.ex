@@ -79,7 +79,6 @@ defmodule TetherWeb.HomeLive do
     end
   end
 
-
   defp load_sessions(socket) do
     case Tmux.list_all() do
       {:ok, sessions} ->

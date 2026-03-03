@@ -10,8 +10,7 @@ When Claude transitions from working to waiting, Tether sends a push notificatio
 ClaudeMonitor (GenServer)
     │
     ├── polls tmux capture-pane every 5s
-    ├── Detector.check(content) → :waiting | :working | :idle
-    ├── ActivityParser → tool name, file path, status
+    ├── ActivityParser.parse(content) → {:waiting, _} | {:tool, _, _} | {:working, _} | {:idle, _}
     │
     ├── on :waiting transition:
     │   ├── Notifier.notify_claude_waiting() → Web Push to all subscribers

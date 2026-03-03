@@ -6,7 +6,7 @@ defmodule Tether.ClaudeMonitor do
   use GenServer
   require Logger
 
-  alias Tether.{Tmux, Detector, Notifier, ActivityParser}
+  alias Tether.{Tmux, Notifier, ActivityParser}
 
   @poll_interval :timer.seconds(5)
 
@@ -96,8 +96,9 @@ defmodule Tether.ClaudeMonitor do
       Enum.map(windows, fn window ->
         case Tmux.capture_pane(window.session, window.index, 30, escape_sequences: false) do
           {:ok, content} ->
-            waiting = match?({:waiting, _}, Detector.check(content))
-            activity = content |> ActivityParser.parse() |> ActivityParser.to_display_string()
+            parsed = ActivityParser.parse(content)
+            waiting = match?({:waiting, _}, parsed)
+            activity = ActivityParser.to_display_string(parsed)
             {window, waiting, activity}
 
           {:error, _} ->
