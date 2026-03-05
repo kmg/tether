@@ -133,6 +133,10 @@ Any TLS certs work — Tailscale is recommended but not required.
 
 Claude Code's [Remote Control](https://code.claude.com/docs/en/remote-control) gives you mobile access to individual sessions. Tether is for when you're running agents on a home server and want push notifications across all your sessions plus a mobile-optimized terminal.
 
+## This tool should become unnecessary
+
+Tether solves a specific bottleneck: agents need your judgment and you're not at your desk. If Claude Code adds native push notifications, or agents become autonomous enough to skip the human loop, Tether becomes unnecessary. That's fine. Build for the bottleneck you have.
+
 ## Architecture
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for how detection works, the notification pipeline, and the technology stack.
