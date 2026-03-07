@@ -351,6 +351,10 @@ const TerminalHook = {
 
   sendResize() {
     const { cols, rows } = this.terminal
+    // Reject garbage dimensions from mid-animation layout states —
+    // iOS keyboard close can cause fitAddon.fit() to calculate cols=1,
+    // which sends a bad resize to tmux → Claude Code renders at width 1
+    if (cols < 10 || rows < 3) return
     // Skip if dimensions haven't changed — a same-size winsz still triggers SIGWINCH
     // in tmux, causing a full screen redraw that can eat characters during typing
     if (cols === this.lastCols && rows === this.lastRows) return
