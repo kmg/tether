@@ -115,20 +115,11 @@ const TerminalHook = {
     // SGR mouse format: ESC[<button;col;rowM (press) or ESC[<button;col;rowm (release)
     const sgrMouseRegex = /\x1b\[<\d+;\d+;\d+[Mm]/g
 
-    // Local echo for snappier feel on slow networks
-    // Only echo printable characters, not escape sequences
-    const isPrintable = (data) => data.length === 1 && data.charCodeAt(0) >= 32 && data.charCodeAt(0) < 127
-
+    // Handle input — send to server
     this.terminal.onData((data) => {
       // Filter out mouse events - they cause issues with Claude Code TUI
       const filtered = data.replace(sgrMouseRegex, '')
       if (filtered) {
-        // Local echo for printable characters (mosh-like snappiness)
-        // Skip if in select mode or if it's a control sequence
-        if (!this.selectMode && isPrintable(filtered)) {
-          // Don't echo - Claude Code handles its own input display
-          // this.terminal.write(filtered)
-        }
         this.pushEvent("terminal_input", { data: utf8ToBase64(filtered) })
       }
     })
